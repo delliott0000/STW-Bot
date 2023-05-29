@@ -14,15 +14,16 @@ async def to_dict(response: ClientResponse) -> dict:
     try:
         return await response.json()
     except ClientResponseError:
-        # This should only happen if we receive an empty response from Epic Games
-        # In which case it is appropriate to return an empty dictionary
+        # This should only happen if we receive an empty response from Epic Games.
+        # In which case it is appropriate to return an empty dictionary.
+        # This will need to be re-worked to be compatible with other APIs.
         return {}
 
 
 class AuthSession:
 
     """
-    Represents an OAuth session between our client and Epic Games.
+    Represents an Auth session between our client and Epic Games.
 
     HTTP requests that require an access token should be made using the `access_request` method.
 
@@ -170,6 +171,16 @@ class AuthSession:
 
 class AsyncRequestsClient:
 
+    """
+    This is a simple class for making generic HTTP requests asynchronously.
+
+    This is intended to act as a parent class for specialised client subclasses to maintain flexibility.
+
+    Each subclass of this should only need to be instantiated once during runtime.
+
+    Ideally, they should also share the same `ClientSession` object as each other.
+    """
+
     def __init__(
             self,
             session: ClientSession
@@ -214,6 +225,14 @@ class AsyncRequestsClient:
 
 
 class EpicGamesClient(AsyncRequestsClient):
+
+    """
+    Subclass of `AsyncRequestsClient` made specifically for interacting with Epic Games' API services.
+
+    Most requests require an access token, which should be obtained by calling `create_auth_session`.
+
+    This will return an instance of `AuthSession`, from which the `access_request` method can be called.
+    """
 
     def __init__(
             self,

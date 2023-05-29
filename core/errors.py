@@ -2,10 +2,23 @@ from aiohttp import ClientResponse
 
 
 class STWException(Exception):
-    pass
+
+    """
+    Base exception class for all STW-related errors.
+    """
 
 
 class HTTPException(STWException):
+
+    """
+    HTTP exception base.
+
+    When an HTTP request returns a status code 3xx/4xx/5xx, a subclass of `HTTPException` is raised.
+
+    Each subclass corresponds to a specific HTTP status code.
+
+    If the status code does not correspond to any subclass, a generic `HTTPException` is raised instead.
+    """
 
     def __init__(
             self,
@@ -23,30 +36,54 @@ class HTTPException(STWException):
 
 
 class BadRequest(HTTPException):
-    pass
+
+    """
+    Corresponds to the `400 Bad Request` status code.
+    """
 
 
 class Unauthorized(HTTPException):
-    pass
+
+    """
+    Corresponds to the `401 Unauthorized` status code.
+    """
 
 
 class Forbidden(HTTPException):
-    pass
+
+    """
+    Corresponds to the `403 Forbidden` status code.
+    """
 
 
 class NotFound(HTTPException):
-    pass
+
+    """
+    Corresponds to the `404 Not Found` status code.
+    """
 
 
 class TooManyRequests(HTTPException):
-    pass
+
+    """
+    Corresponds to the `429 Too Many Requests` status code.
+
+    Note: Epic Games' API service may sometimes return a 403 code in place of a 429.
+    """
 
 
 class ServerError(HTTPException):
-    pass
+
+    """
+    Raised when any `5xx` HTTP status code occurs.
+    """
 
 
 class UnknownItem(STWException):
+
+    """
+    Raised when attempting to instantiate a fortnite object with an unknown template ID.
+    """
 
     def __init__(
             self,
@@ -62,6 +99,10 @@ class UnknownItem(STWException):
 
 
 class BadItemData(STWException):
+
+    """
+    Raised when attempting to instantiate a fortnite object with invalid/malformed attribute data.
+    """
 
     def __init__(
             self,

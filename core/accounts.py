@@ -10,6 +10,16 @@ from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad
 
 class ExternalConnection:
 
+    """
+    Represents an external account linked to an Epic Games account.
+
+    Each user currently cannot view other users' external connections.
+
+    This is probably due to an inconsistency in how we are requesting data from Epic Games.
+
+    This is probably fixable, but it is not a priority.
+    """
+
     def __init__(
             self,
             account,
@@ -24,6 +34,14 @@ class ExternalConnection:
 
 
 class PartialEpicAccount:
+
+    """
+    Represents an Epic Games account as seen publicly by another user.
+
+    The `auth_session` does not necessarily belong to the `PartialEpicAccount` itself.
+
+    Rather, it is the AuthSession that was used to retrieve the `PartialEpicAccount`s data.
+    """
 
     def __init__(
             self,
@@ -145,6 +163,10 @@ class PartialEpicAccount:
 
 class FriendEpicAccount(PartialEpicAccount):
 
+    """
+    Identical to `PartialEpicAccount` but also has a `mutual` attribute.
+    """
+
     def __init__(
             self,
             auth_session,
@@ -156,6 +178,14 @@ class FriendEpicAccount(PartialEpicAccount):
 
 
 class FullEpicAccount(PartialEpicAccount):
+
+    """
+    Represents a user's own Epic Games account. Includes public and non-public account data.
+
+    Unlike with the parent class, the `auth_session` belongs to the Epic Games account itself.
+
+    This allows us to access non-public account information and make updates/changes to the account.
+    """
 
     def __init__(
             self,

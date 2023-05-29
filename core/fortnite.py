@@ -8,6 +8,14 @@ from core.errors import UnknownItem, BadItemData
 
 class BaseEntity:
 
+    """
+    Base Fortnite: STW entity.
+
+    This could be a "physical" item such as a weapon/hero, or something more abstract like a quest.
+
+    All entities have a unique item ID as well as a template ID that defines the type of item it is.
+    """
+
     def __init__(
             self,
             account,
@@ -26,6 +34,14 @@ class BaseEntity:
 
 
 class AccountItem(BaseEntity):
+
+    """
+    Items such as schematics, heroes, account resources and crafting materials are classified as account items.
+
+    Does not include quests or (currently) cosmetic items.
+
+    These items have a set of attributes that vary slightly depending on the exact item type.
+    """
 
     def __init__(
             self,
@@ -63,6 +79,12 @@ class AccountItem(BaseEntity):
 
 class Recyclable(AccountItem):
 
+    """
+    Any item that can be recycled.
+
+    Includes schematics/heroes/survivors as well as inventory items like weapons and traps.
+    """
+
     async def recycle(self):
         await self.account.auth_session.profile_request(
             route='client',
@@ -76,6 +98,12 @@ class Recyclable(AccountItem):
 
 
 class Upgradable(Recyclable):
+
+    """
+    Any item that can be upgraded and evolved.
+
+    All upgradable items can also be recycled, but vice versa, hence the class inheritance.
+    """
 
     async def upgrade(self):
         await self.account.auth_session.profile_request(
@@ -105,6 +133,12 @@ class Upgradable(Recyclable):
 
 
 class Schematic(Upgradable):
+
+    """
+    Represents an in-game schematic, which is used to craft weapons or traps.
+
+    This class is NOT the same as weapon/trap inventory items.
+    """
 
     def __init__(
             self,
@@ -152,7 +186,16 @@ class Schematic(Upgradable):
 
 class SchematicPerk:
 
-    # Currently missing description attribute
+    """
+    Represents a single perk attached to a schematic.
+
+    Unlike most other Fortnite objects, this does not inherit from `BaseEntity`.
+
+    This is because they only have a single `perk_id` to identify what they are.
+
+    Currently missing the description attribute, but we can deduce the rarity from the perk ID.
+    """
+
     def __init__(
             self,
             item: Schematic,
@@ -170,6 +213,16 @@ class SchematicPerk:
 
 
 class SurvivorBase(Upgradable):
+
+    """
+    The base class for all survivor account items.
+
+    All survivors share common attributes such as personality and the squad they belong too.
+
+    Lead survivors vary slightly from standard survivors though.
+
+    Not to be confused with survivor characters encountered in-world during gameplay.
+    """
 
     def __init__(
             self,
@@ -198,6 +251,10 @@ class SurvivorBase(Upgradable):
 
 class Survivor(SurvivorBase):
 
+    """
+    Standard (non-leader) survivor account item.
+    """
+
     def __init__(
             self,
             account,
@@ -220,6 +277,10 @@ class Survivor(SurvivorBase):
 
 class LeadSurvivor(SurvivorBase):
 
+    """
+    Lead survivor account item.
+    """
+
     def __init__(
             self,
             account,
@@ -241,6 +302,16 @@ class LeadSurvivor(SurvivorBase):
 
 class ActiveSetBonus:
 
+    """
+    Represents a complete, active set bonus within a survivor squad.
+
+    Not to be confused with the `Survivor.set_bonus_type` attribute.
+
+    Multiple `Survivor`s with the same `set_bonus_type` form an `ActiveSetBonus`.
+
+    This class does not inherit from `BaseEntity`.
+    """
+
     def __init__(
             self,
             name: str,
@@ -258,6 +329,12 @@ class ActiveSetBonus:
 
 
 class SurvivorSquad:
+
+    """
+    A squad of survivors.
+
+    This class does not inherit from `BaseEntity` because it is just an arranged group of `SurvivorBase`s.
+    """
 
     def __init__(
             self,

@@ -3,6 +3,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 class MongoDBClient:
 
+    """
+    Responsible for handling all MongoDB operations.
+
+    This class should only be instantiated once during runtime.
+    """
+
     def __init__(self, connection_uri: str):
         self.database = AsyncIOMotorClient(connection_uri).database
 
