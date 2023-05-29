@@ -1,0 +1,3 @@
+TOKEN = ''
+OWNERS = {}
+MONGO = ''
