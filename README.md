@@ -1,4 +1,4 @@
-**This project is a work in progress, some features may be unstable or incomplete!**
+**This project is a work in progress. As a result, the bot may frequently be offline. Furthermore, some features may be unstable or incomplete!**
 
 # STW Bot
 STW Bot is a Discord companion bot that allows you to remotely access your Epic Games account as well as your Fortnite: Save The World profile.
