@@ -1,6 +1,6 @@
 import asyncio
 from math import floor
-from typing import Union
+from typing import Union, Optional
 
 from dateutil import parser
 
@@ -53,14 +53,24 @@ class PartialEpicAccount:
         self.id = data.get('id') or data.get('accountId')
         self.display = data.get('displayName')
 
+        self._cache = None
+
     @staticmethod
     def _dt_to_int(dt: str) -> int:
         return floor(parser.parse(dt).timestamp())
 
-    async def icon_url(self) -> Union[str, None]:
-        data = await self.auth_session.profile_request(
-            epic_id=self.id
-        )
+    # Thanks Epic
+    async def update(self):
+        data = await self.auth_session.get_other_account(epic_id=self.id)
+        self.display = data.display
+
+    async def fort_data(self) -> dict:
+        if self._cache is None:
+            self._cache = await self.auth_session.profile_request(epic_id=self.id)
+        return self._cache
+
+    async def icon_url(self) -> Optional[str]:
+        data = await self.fort_data()
 
         try:
             items = data['profileChanges'][0]['profile']['items']
@@ -82,15 +92,7 @@ class PartialEpicAccount:
                 try:
                     return character_data['data']['images']['icon']
                 except KeyError:
-                    return
-
-    # Thanks Epic
-    async def update(self):
-        data = await self.auth_session.get_other_account(epic_id=self.id)
-        self.display = data.display
-
-    async def fort_data(self) -> dict:
-        return await self.auth_session.profile_request(epic_id=self.id)
+                    continue
 
     async def fort_items(self) -> dict:
         return (await self.fort_data())['profileChanges'][0]['profile']['items']
