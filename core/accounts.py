@@ -53,8 +53,6 @@ class PartialEpicAccount:
         self.id = data.get('id') or data.get('accountId')
         self.display = data.get('displayName')
 
-        self._cache = None
-
     @staticmethod
     def _dt_to_int(dt: str) -> int:
         return floor(parser.parse(dt).timestamp())
@@ -65,9 +63,7 @@ class PartialEpicAccount:
         self.display = data.display
 
     async def fort_data(self) -> dict:
-        if self._cache is None:
-            self._cache = await self.auth_session.profile_request(epic_id=self.id)
-        return self._cache
+        return await self.auth_session.profile_request(epic_id=self.id)
 
     async def icon_url(self) -> Optional[str]:
         data = await self.fort_data()
