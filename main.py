@@ -30,8 +30,8 @@ try:
     from core.accounts import FullEpicAccount, FriendEpicAccount, PartialEpicAccount
     from components.embed import CustomEmbed, EmbedField
     from resources import config
-except ModuleNotFoundError:
-    logging.fatal('Missing required dependencies.')
+except ModuleNotFoundError as unknown_import:
+    logging.fatal(f'Missing required dependencies - {unknown_import}.')
     exit(0)
 
 

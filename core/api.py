@@ -42,6 +42,9 @@ class AuthSession:
         self.epic_id = self.access_token = self.refresh_token = self.access_expires_at = self.refresh_expires_at = None
         self.renew_data(data)
 
+        self._cached_full_account = None
+        self._cached_full_update_time = 0
+
         # True if session was killed via HTTP
         self._expired = False
 
@@ -111,11 +114,14 @@ class AuthSession:
         self._expired = True
 
     async def get_own_account(self) -> FullEpicAccount:
-        data = await self.access_request(
-            'get',
-            self.client.account_requests_url.format(self.epic_id)
-        )
-        return FullEpicAccount(self, data)
+        if self._cached_full_account is None or self._cached_full_update_time < time():
+            data = await self.access_request(
+                'get',
+                self.client.account_requests_url.format(self.epic_id)
+            )
+            self._cached_full_account = FullEpicAccount(self, data)
+            self._cached_full_update_time = time() + 1800
+        return self._cached_full_account
 
     async def get_own_partial(self) -> PartialEpicAccount:
         return await self.get_other_account(epic_id=self.epic_id)

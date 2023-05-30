@@ -53,6 +53,8 @@ class PartialEpicAccount:
         self.id = data.get('id') or data.get('accountId')
         self.display = data.get('displayName')
 
+        self._icon_url = None
+
     @staticmethod
     def _dt_to_int(dt: str) -> int:
         return floor(parser.parse(dt).timestamp())
@@ -66,29 +68,36 @@ class PartialEpicAccount:
         return await self.auth_session.profile_request(epic_id=self.id)
 
     async def icon_url(self) -> Optional[str]:
-        data = await self.fort_data()
+        if self._icon_url is None:
 
-        try:
-            items = data['profileChanges'][0]['profile']['items']
-        except KeyError:
-            return
+            data = await self.fort_data()
 
-        for item in items:
-            if items[item]['templateId'].startswith('CosmeticLocker'):
-                try:
-                    character_id = items[item]['attributes']['locker_slots_data']['slots']['Character']['items'][0][16:]
-                except KeyError:
-                    continue
+            try:
+                items = data['profileChanges'][0]['profile']['items']
+            except KeyError:
+                return
 
-                # Getting from Fortnite-API instead because it's easier
-                character_data = await self.auth_session.client.request(
-                    'get',
-                    f'https://fortnite-api.com/v2/cosmetics/br/{character_id}'
-                )
-                try:
-                    return character_data['data']['images']['icon']
-                except KeyError:
-                    continue
+            for item in items:
+                if items[item]['templateId'].startswith('CosmeticLocker'):
+
+                    try:
+                        char_id = items[item]['attributes']['locker_slots_data']['slots']['Character']['items'][0][16:]
+                    except KeyError:
+                        continue
+
+                    character_data = await self.auth_session.client.request(
+                        'get',
+                        f'https://fortnite-api.com/v2/cosmetics/br/{char_id}'
+                    )
+
+                    try:
+                        self._icon_url = character_data['data']['images']['icon']
+                    except KeyError:
+                        continue
+
+                    break
+
+        return self._icon_url
 
     async def fort_items(self) -> dict:
         return (await self.fort_data())['profileChanges'][0]['profile']['items']
