@@ -1,4 +1,3 @@
-import asyncio
 from math import floor
 from typing import Union, Optional
 
@@ -58,11 +57,6 @@ class PartialEpicAccount:
     @staticmethod
     def _dt_to_int(dt: str) -> int:
         return floor(parser.parse(dt).timestamp())
-
-    # Thanks Epic
-    async def update(self):
-        data = await self.auth_session.get_other_account(epic_id=self.id)
-        self.display = data.display
 
     async def fort_data(self) -> dict:
         return await self.auth_session.profile_request(epic_id=self.id)
@@ -227,23 +221,43 @@ class FullEpicAccount(PartialEpicAccount):
 
         return externals
 
-    async def friends_list(
-            self,
-            friend_type: str = 'friends'
-    ) -> Union[list[PartialEpicAccount], list[FriendEpicAccount]]:
+    @staticmethod
+    def _chunk(list_: list, n: int = 100):
+        for i in range(0, len(list_), n):
+            yield list_[i:i + n]
+
+    # Recently re-worked to prioritise using as few API calls as possible
+    # Perhaps some polishing and speed optimisation is possible though
+    async def friends_list(self, friend_type: str = 'friends') -> list[Union[PartialEpicAccount, FriendEpicAccount]]:
         data = await self.auth_session.get_own_friend_data()
 
         friends_list = []
-        tasks = []
-
-        cls = PartialEpicAccount if friend_type == 'blocklist' else FriendEpicAccount
+        cls_ = PartialEpicAccount if friend_type == 'blocklist' else FriendEpicAccount
 
         for item in data[friend_type]:
-            friend = cls(self.auth_session, item)
+            friend = cls_(self.auth_session, item)
             friends_list.append(friend)
-            tasks.append(asyncio.ensure_future(friend.update()))
 
-        await asyncio.gather(*tasks)
+        # Epic does not give us the display names of the accounts when we request friend data
+        # We need to do bulk account lookups to get those ourselves
+        # Making an API call for each individual account is simpler, faster and more readable
+        # But it will likely result in us being rate limited
+
+        # This splits the list of friend IDs into groups of up to 100
+        friend_id_groups = list(self._chunk([account.id for account in friends_list], 100))
+
+        # Nobody needs more than 300 people on their friends list... right?
+        if len(friend_id_groups) > 3:
+            friend_id_groups = friend_id_groups[:3]
+
+        for friend_id_group in friend_id_groups:
+            id_group_data = await self.auth_session.bulk_account_lookup(friend_id_group)
+            for entry in id_group_data:
+                for account in friends_list:
+                    if entry.get('id') == account.id:
+                        account.display = entry.get('displayName')
+                        break
+
         return friends_list
 
     async def add_friend(

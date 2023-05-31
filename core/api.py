@@ -1,4 +1,5 @@
 from base64 import b64encode
+from typing import Union
 from time import time
 import logging
 
@@ -81,7 +82,7 @@ class AuthSession:
             url: str,
             retry: bool = False,
             **kwargs
-    ) -> dict:
+    ) -> Union[dict, list]:
         headers = kwargs.get('headers') or {'Authorization': f'bearer {self.access_token}'}
 
         try:
@@ -154,6 +155,13 @@ class AuthSession:
         )
         return PartialEpicAccount(self, data)
 
+    async def bulk_account_lookup(self, account_ids: list) -> list:
+        return await self.access_request(
+            'get',
+            self.client.account_requests_url.format(''),
+            params=[('accountId', account_id) for account_id in account_ids]
+        )
+
     async def profile_request(
             self,
             method: str = 'post',
@@ -172,6 +180,12 @@ class AuthSession:
             method,
             self.client.profile_requests_url.format(epic_id, route, operation, profile_id),
             json=json
+        )
+
+    async def get_mission_data(self) -> dict:
+        return await self.access_request(
+            'get',
+            self.client.missions_url
         )
 
 
@@ -198,7 +212,7 @@ class AsyncRequestsClient:
             method: str,
             url: str,
             **kwargs
-    ) -> dict:
+    ) -> Union[dict, list]:
         async with self.session.request(
                 method,
                 url,
@@ -265,6 +279,8 @@ class EpicGamesClient(AsyncRequestsClient):
         self.account_requests_url = self.base_epic_url + '/public/account/{0}'
         self.friends_requests_url = self.base_frds_url + '/{0}'
         self.profile_requests_url = self.base_fort_url + '/game/v2/profile/{0}/{1}/{2}?profileId={3}'
+
+        self.missions_url = 'https://fngw-mcp-gc-livefn.ol.epicgames.com/fortnite/api/game/v2/world/info'
 
     async def create_auth_session(
             self,
