@@ -2,6 +2,7 @@ from typing import Optional
 
 # stringList is a lookup table containing values such as the names, rarities and types of items
 # This is necessary as not all data can be retrieved via HTTP request, some of it is hard-coded in the game
+from resources.emojis import emojis
 from resources.lookup import stringList
 from core.errors import UnknownItem, BadItemData
 
@@ -14,6 +15,8 @@ class BaseEntity:
     This could be a "physical" item such as a weapon/hero, or something more abstract like a quest.
 
     All entities have a unique item ID as well as a template ID that defines the type of item it is.
+
+    They also have an Epic Games account that they belong to.
     """
 
     def __init__(
@@ -30,7 +33,7 @@ class BaseEntity:
             self,
             other
     ):
-        return isinstance(other, BaseEntity) and self.item_id == other.item_id
+        return isinstance(other, BaseEntity) and self.item_id and other.item_id and self.item_id == other.item_id
 
 
 class AccountItem(BaseEntity):
@@ -71,8 +74,8 @@ class AccountItem(BaseEntity):
         self.rarity: str = stringList['Items'][lookup_id]['rarity']
         self.type: str = stringList['Item Types'][stringList['Items'][lookup_id]['type']]
 
-        self.level: int = attrs.get('level') or 1
-        self.favourite: bool = attrs.get('favorite') or False
+        self.level: int = attrs.get('level', 1)
+        self.favourite: bool = attrs.get('favorite', False)
 
         self.tier: int = int(template_id[-1]) if template_id[-1].isdigit() else 1
 
@@ -406,3 +409,61 @@ class SurvivorSquad:
         fort_stats[stringList['Survivor Squads FORT'][self.name]] += survivor_point_count
 
         return fort_stats
+
+
+class AccountResource(AccountItem):
+
+    def __init__(
+            self,
+            account,
+            item_id: str,
+            template_id: str,
+            quantity: int,
+    ):
+        super().__init__(account, item_id, template_id, {})
+        self.quantity = quantity
+
+    @property
+    def emoji(self):
+        return emojis['resources'].get(self.name) or emojis['rarities'][self.rarity]
+
+
+class MissionAlertReward(AccountResource):
+
+    """
+    Represents a single mission alert reward from a mission alert.
+
+    These are not rewards that can be earned over and over, these are strictly one-time rewards.
+
+    Unlike `AccountResource`, these are not "real" items, rather they're more akin to "imaginary" items.
+
+    Hence, they do not actually have a unique item ID nor an owner account.
+    """
+
+    def __init__(
+            self,
+            **kwargs
+    ):
+        super().__init__(None, 'None', kwargs.get('itemType'), kwargs.get('quantity'))
+
+
+class MissionAlert:
+
+    """
+    Represents a mission alert.
+
+    This does not inherit from `BaseEntity` because it has no owner account nor a template ID.
+    """
+
+    def __init__(
+            self,
+            **kwargs
+    ):
+        self.name = kwargs.get('name')
+        self.theater = kwargs.get('theater')
+        self.tile_theme = kwargs.get('tile_theme')
+        self.alert_rewards = [MissionAlertReward(**reward) for reward in kwargs.get('alert_rewards_data', [])]
+
+        power_data = kwargs.get('power').split(' ')
+        self.power = int(power_data[0])
+        self.four_player = 'Players' in power_data

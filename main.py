@@ -6,6 +6,8 @@ from typing import Union, Dict
 from math import floor
 from datetime import timedelta
 from time import time
+from datetime import time as dt_time
+from traceback import format_exception
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -25,9 +27,10 @@ try:
 
     # local imports
     from core.api import EpicGamesClient, AuthSession
-    from core.errors import Unauthorized
+    from core.errors import Unauthorized, HTTPException
     from core.mongo import MongoDBClient
     from core.accounts import FullEpicAccount, FriendEpicAccount, PartialEpicAccount
+    from core.fortnite import MissionAlert
     from components.embed import CustomEmbed, EmbedField
     from resources import config
 except ModuleNotFoundError as unknown_import:
@@ -59,6 +62,11 @@ class STWBot(commands.Bot):
 
         self._cached_auth_sessions: Dict[int, AuthSession] = {}
 
+        # Mission alert stuff
+        self._mission_alert_cache = []
+        self._fnc_base_url = 'https://fortnitecentral.genxgames.gg/api/v1/export?path='
+        self._all_theaters = '/Game/Balance/DataTables/GameDifficultyGrowthBounds.GameDifficultyGrowthBounds'
+
     @staticmethod
     def color(guild: Guild):
         try:
@@ -82,6 +90,7 @@ class STWBot(commands.Bot):
     def fields_to_embeds(
             interaction: Interaction,
             fields: list[EmbedField],
+            field_limit: int = 6,
             title: str = None,
             description: str = None,
             author_name: str = None,
@@ -95,7 +104,7 @@ class STWBot(commands.Bot):
 
         for field in fields:
 
-            if len(embed_list[-1].fields) > 5:
+            if len(embed_list[-1].fields) > field_limit - 1:
                 embed_list.append(CustomEmbed(
                     interaction,
                     title=title,
@@ -168,7 +177,11 @@ class STWBot(commands.Bot):
         else:
             message = str(error)
 
-        await self.bad_response(interaction, message)
+        traceback_ = ''.join(format_exception(type(error), error, error.__traceback__))
+        full_message = f'**{message}**\n\n**Full traceback:**\n```py\n{traceback_}\n```' \
+            if interaction.user.id in self.owner_ids else f'**{message}**'
+
+        await self.bad_response(interaction, full_message)
 
     @tasks.loop(minutes=1)
     async def renew_sessions(self):
@@ -186,6 +199,112 @@ class STWBot(commands.Bot):
                     logging.error(f'Failed to renew OAuth session {auth_session.access_token} - ending session...')
                     await self.del_auth_session(discord_id)
 
+    async def missions(self):
+        if not self._mission_alert_cache:
+            await self.refresh_mission_alerts()
+        return self._mission_alert_cache
+
+    @tasks.loop(time=dt_time(second=15))
+    async def refresh_mission_alerts(self):
+        self._mission_alert_cache = []
+
+        logging.info('Attempting to refresh mission alert data...')
+
+        for discord_id in self._cached_auth_sessions:
+            auth_session = self._cached_auth_sessions[discord_id]
+            try:
+                data = await auth_session.get_mission_data()
+                break
+            except HTTPException:
+                continue
+        else:
+            logging.error('Unable to retrieve today\'s mission data, aborting...')
+            return
+
+        theaters = data.get('theaters')
+        missions = data.get('missions')
+        alerts = data.get('missionAlerts')
+
+        theater_data = await self._session.get(self._fnc_base_url + self._all_theaters)
+        theater_json = await theater_data.json()
+
+        for i, theater in enumerate(alerts):
+
+            theater_id = theater.get('theaterId')
+            for _theater in theaters:
+                if _theater.get('uniqueId') == theater_id:
+                    theater_name = _theater.get('displayName').get('en')
+                    break
+            else:
+                theater_name = 'Unknown Theater'
+
+            for available_alert in theater.get("availableMissionAlerts"):
+
+                tile_index = available_alert.get('tileIndex')
+                alert_rewards = available_alert.get('missionAlertRewards', {}).get('items', [])
+
+                tile_theme_path = data['theaters'][i]['tiles'][tile_index]['zoneTheme']
+                tile_theme_file = await self._session.get(self._fnc_base_url + tile_theme_path.split('.')[0])
+                tile_theme_json = await tile_theme_file.json()
+                tile_theme_name = tile_theme_json['jsonOutput'][1]['Properties']['ZoneName']['sourceString']
+
+                for mission in missions[i].get('availableMissions'):
+                    if mission.get('tileIndex') == tile_index:
+
+                        __theater = mission.get('missionDifficultyInfo').get("rowName")
+                        generator = mission.get('missionGenerator')
+
+                        name = self._mission_name(generator)
+                        if name is None:
+                            break
+
+                        power = theater_json['jsonOutput'][0]['Rows'][__theater]['ThreatDisplayName']['sourceString']
+
+                        self._mission_alert_cache.append(MissionAlert(
+                            name=name,
+                            power=power,
+                            theater=theater_name,
+                            tile_theme=tile_theme_name,
+                            alert_rewards_data=alert_rewards
+                        ))
+
+                        break
+
+        logging.info('Success!')
+
+    @staticmethod
+    def _mission_name(generator: str):
+        if "_EtSurvivors_" in generator or '_EvacuateTheSurvivors_' in generator:
+            return 'Rescue The Survivors'
+        elif "_EtShelter_" in generator:
+            return 'Evacuate The Shelter'
+        elif "_1Gate_" in generator or '_Cat1FtS_' in generator:
+            return 'Fight The Storm: Category 1'
+        elif "_2Gate" in generator:
+            return 'Fight The Storm: Category 2'
+        elif "_3Gate" in generator:
+            return 'Fight The Storm: Category 3'
+        elif "_4Gate" in generator:
+            return 'Fight The Storm: Category 4'
+        elif "_DtB_" in generator:
+            return 'Deliver The Bomb'
+        elif '_DtE' in generator or '_DestroyTheEncampments_' in generator:
+            return 'Destroy The Encampments'
+        elif "_RtD_" in generator or '_RetrieveTheData_' in generator:
+            return 'Retrieve The Data'
+        elif "_RtL_" in generator or '_RideTheLightning_' in generator or '_LtB_' in generator:
+            return 'Ride The Lightning'
+        elif "_RtS_" in generator:
+            return 'Repair The Shelter'
+        elif '_Resupply_' in generator:
+            return 'Resupply'
+        elif '_EliminateAndCollect' in generator:
+            return 'Eliminate And Collect'
+        elif '_RefuelTheBase_' in generator:
+            return 'Refuel Homebase'
+        elif '_BuildtheRadarGrid' in generator:
+            return 'Build The Radar Grid'
+
     async def setup_hook(self):
         logging.info(f'Logging in as {self.user} (ID: {self.user.id})...')
         logging.info(f'Owners: {", ".join([str(await self.fetch_user(user_id)) for user_id in self.owner_ids])}')
@@ -198,6 +317,7 @@ class STWBot(commands.Bot):
         logging.info('Done!')
 
         self.renew_sessions.start()
+        self.refresh_mission_alerts.start()
 
     def run_bot(self):
 
@@ -222,6 +342,7 @@ class STWBot(commands.Bot):
             except Exception:
                 pass
             self.renew_sessions.stop()
+            self.refresh_mission_alerts.stop()
 
         try:
             asyncio.run(_bot_runner())

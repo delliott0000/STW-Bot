@@ -83,7 +83,7 @@ class AuthSession:
             retry: bool = False,
             **kwargs
     ) -> Union[dict, list]:
-        headers = kwargs.get('headers') or {'Authorization': f'bearer {self.access_token}'}
+        headers = {'Authorization': f'bearer {self.access_token}'}
 
         try:
             return await self.client.request(
@@ -103,7 +103,6 @@ class AuthSession:
                 method,
                 url,
                 retry=True,
-                headers=headers,
                 **kwargs
             )
 

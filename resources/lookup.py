@@ -7435,6 +7435,16 @@ stringList = {
       "rarity": "uncommon",
       "type": "defender"
     },
+    "AccountResource:currency_mtxswap": {
+      "name": "VBucks",
+      "rarity": "legendary",
+      "type": "accountresource"
+    },
+    "AccountResource:campaign_event_currency": {
+      "name": "Tickets",
+      "rarity": "rare",
+      "type": "accountresource"
+    },
     "AccountResource:eventcurrency_summer": {
       "name": "Summer Tickets",
       "rarity": "rare",
