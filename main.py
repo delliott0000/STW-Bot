@@ -2,7 +2,7 @@ import logging
 import asyncio
 import os
 from aiohttp import ClientSession
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 from math import floor
 from datetime import timedelta
 from time import time
@@ -119,16 +119,16 @@ class STWBot(commands.Bot):
 
         return embed_list
 
-    def get_auth_session(self, discord_id: int) -> Union[AuthSession, None]:
+    def get_auth_session(self, discord_id: int) -> Optional[AuthSession]:
         return self._cached_auth_sessions.get(discord_id)
 
-    def discord_id_from_partial(self, account: Union[PartialEpicAccount, FriendEpicAccount]) -> Union[int, None]:
+    def discord_id_from_partial(self, account: Union[PartialEpicAccount, FriendEpicAccount]) -> Optional[int]:
         for discord_id in self._cached_auth_sessions:
             if self._cached_auth_sessions[discord_id].epic_id == account.id:
                 return discord_id
 
     # Simple shortcut method that attempts to call `async AuthSession.get_own_account()`
-    async def get_full_account(self, discord_id: int) -> Union[FullEpicAccount, None]:
+    async def get_full_account(self, discord_id: int) -> Optional[FullEpicAccount]:
         auth_session = self.get_auth_session(discord_id)
         try:
             epic_account = await auth_session.get_own_account()
@@ -161,7 +161,7 @@ class STWBot(commands.Bot):
     async def user_is_premium(self, discord_id: int) -> bool:
         return (await self.mongo_db.search_data_entry(discord_id))['is_premium']
 
-    async def user_setting_stay_logged_in(self, discord_id: int) -> bool:
+    async def user_setting_stay_signed_in(self, discord_id: int) -> bool:
         return (await self.mongo_db.search_settings_entry(discord_id))['stay_signed_in']
 
     async def user_setting_auto_daily(self, discord_id: int) -> bool:
@@ -186,17 +186,14 @@ class STWBot(commands.Bot):
     @tasks.loop(minutes=1)
     async def renew_sessions(self):
         for discord_id in self._cached_auth_sessions:
-            if await self.user_setting_stay_logged_in(discord_id) is False:
-                continue
-
-            auth_session = self._cached_auth_sessions[discord_id]
-            if auth_session.refresh_expires_at - time() < 120:
+            auth = self.get_auth_session(discord_id)
+            if auth.refresh_expires_at - time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
                 try:
-                    logging.info(f'Attempting to renew OAuth session {auth_session.access_token}...')
-                    await auth_session.renew()
+                    logging.info(f'Attempting to renew OAuth session {auth.access_token}...')
+                    await auth.renew()
                     logging.info(f'Success.')
                 except Unauthorized:
-                    logging.error(f'Failed to renew OAuth session {auth_session.access_token} - ending session...')
+                    logging.error(f'Failed to renew OAuth session {auth.access_token} - ending session...')
                     await self.del_auth_session(discord_id)
 
     async def missions(self):
