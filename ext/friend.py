@@ -141,7 +141,7 @@ class FriendCommands(app_commands.Group):
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.')
-    @app_commands.command(name='remove', description='Remove a user from your friends list/cancel an outgoing request.')
+    @app_commands.command(name='remove', description='Remove a user from your friends list.')
     async def remove(self, interaction: Interaction, display: str):
         await interaction.response.defer(thinking=True, ephemeral=True)
 

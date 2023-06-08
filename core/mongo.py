@@ -17,6 +17,9 @@ class MongoDBClient:
     # - - - - - - - - - - - - - - - -
     # stay_signed_in:   bool = True
     # auto_daily:       bool = False
+    # -----planned-----
+    # auto_research:    bool = False
+    # auto_free_llamas: bool = False
     # # # # # # # # # # # # # # # # #
 
     @staticmethod
