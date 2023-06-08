@@ -85,7 +85,6 @@ class MissionCommands(app_commands.Group):
         theater_list = self.order_theaters(set(mission.theater for mission in missions))
         for theater in theater_list:
 
-            # Sort missions within each theater by power level
             theater_missions = [mission for mission in missions if mission.theater == theater]
             theater_missions.sort(key=lambda m: m.power)
 
@@ -115,8 +114,6 @@ class MissionCommands(app_commands.Group):
 
         missions = await self.bot.missions()
 
-        from core.fortnite import MissionAlertReward
-
         vbuck_missions = []
         vbuck_count = 0
 
@@ -135,6 +132,35 @@ class MissionCommands(app_commands.Group):
             description=f'**Total VBucks:** `{vbuck_count}`',
             author_name='VBuck Alerts',
             author_icon=emojis['vbuck_url']
+        )
+
+        await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
+
+    @app_commands.checks.cooldown(1, 15)
+    @is_logged_in()
+    @is_not_blacklisted()
+    @app_commands.command(name='survivors', description='View today\'s legendary/mythic survivor mission alerts.')
+    async def survivors(self, interaction: Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
+        missions = await self.bot.missions()
+
+        leg_surv_missions = []
+
+        for mission in missions:
+            for reward in mission.alert_rewards:
+                if (reward.name == 'Survivor' and reward.rarity == 'legendary') or reward.rarity == 'mythic':
+                    leg_surv_missions.append(mission)
+                    break
+
+        fields = self.missions_to_fields(leg_surv_missions, include_theater=True)
+        embeds = self.bot.fields_to_embeds(
+            interaction,
+            fields,
+            field_limit=4,
+            description=f'**Total Missions:** `{len(leg_surv_missions)}`',
+            author_name='Legendary Survivor Alerts',
+            author_icon=emojis['survivor_url']
         )
 
         await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))

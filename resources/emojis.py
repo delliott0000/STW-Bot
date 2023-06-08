@@ -11,6 +11,7 @@ emojis = {
     'loot': '<:VictoryCrown:1115057891746000957>',
     'unknown': '<:Unknown:1115061137759805481>',
     'vbuck_url': 'https://cdn.discordapp.com/emojis/1115071578842083328.webp?size=160&quality=lossless',
+    'survivor_url': 'https://cdn.discordapp.com/emojis/1110278502302887936.webp?size=160&quality=lossless',
     'rarities': {
         'common': '<:CommonSchematic:1087123491897221200>',
         'uncommon': '<:UncommonSchematic:1087123515548913736>',
