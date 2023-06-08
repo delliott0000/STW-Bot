@@ -68,6 +68,10 @@ class AuthSession:
     def _dt_to_float(dt: str) -> float:
         return parser.parse(dt).timestamp()
 
+    # Called when an `AuthSession` instance needs to be deleted from memory
+    def del_own_account(self):
+        del self._cached_full_account
+
     async def renew(self) -> None:
         # Do nothing if the access token is already active
         if self.is_active is True:

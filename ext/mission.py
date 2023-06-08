@@ -1,3 +1,5 @@
+from typing import Optional
+
 from discord import app_commands, Interaction
 
 from main import STWBot
@@ -43,7 +45,7 @@ class MissionCommands(app_commands.Group):
 
         return embed_fields
 
-    def order_theaters(self, theaters: set[str]):
+    def order_theaters(self, theaters: set[Optional[str]]):
         ordered_list = []
 
         for item in self.theater_list:

@@ -62,7 +62,6 @@ class STWBot(commands.Bot):
 
         self._cached_auth_sessions: Dict[int, AuthSession] = {}
 
-        # Mission alert stuff
         self._mission_alert_cache = []
         self._fnc_base_url = 'https://fortnitecentral.genxgames.gg/api/v1/export?path='
         self._all_theaters = '/Game/Balance/DataTables/GameDifficultyGrowthBounds.GameDifficultyGrowthBounds'
@@ -150,7 +149,9 @@ class STWBot(commands.Bot):
         except Unauthorized:
             pass
 
-        self._cached_auth_sessions.pop(discord_id)
+        auth_session.del_own_account()
+        del auth_session
+        del self._cached_auth_sessions[discord_id]
 
     def user_is_logged_in(self, discord_id: int) -> bool:
         return True if isinstance(self.get_auth_session(discord_id), AuthSession) else False
@@ -196,7 +197,7 @@ class STWBot(commands.Bot):
                     logging.error(f'Failed to renew OAuth session {auth.access_token} - ending session...')
                     await self.del_auth_session(discord_id)
 
-    async def missions(self):
+    async def missions(self) -> list[MissionAlert]:
         if not self._mission_alert_cache:
             await self.refresh_mission_alerts()
         return self._mission_alert_cache
@@ -270,7 +271,7 @@ class STWBot(commands.Bot):
         logging.info('Success!')
 
     @staticmethod
-    def _mission_name(generator: str):
+    def _mission_name(generator: str) -> Optional[str]:
         if "_EtSurvivors_" in generator or '_EvacuateTheSurvivors_' in generator:
             return 'Rescue The Survivors'
         elif "_EtShelter_" in generator:
