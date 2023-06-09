@@ -119,7 +119,7 @@ class AccountCommands(app_commands.Group):
         epic_id='Search by Epic Games account ID.',
         display='Search by Epic Games display name.'
     )
-    @app_commands.command(name='search', description='Search for an Epic Games account by.')
+    @app_commands.command(name='search', description='Search for an Epic Games account.')
     async def search(self, interaction: Interaction, user: User = None, epic_id: str = None, display: str = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
 

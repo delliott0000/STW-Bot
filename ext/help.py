@@ -8,19 +8,19 @@ from resources.emojis import emojis
 
 
 # noinspection PyUnresolvedReferences
-class UtilityCommands(app_commands.Group):
+class HelpCommands(app_commands.Group):
 
     def __init__(
             self,
             bot: STWBot,
-            name: str = 'utilities'
+            name: str = 'help'
     ):
         super().__init__(name=name)
         self.bot = bot
 
     @is_not_blacklisted()
-    @app_commands.command(name='help', description='View information about the bot\'s commands.')
-    async def help(self, interaction: Interaction):
+    @app_commands.command(name='menu', description='View information about the bot\'s commands.')
+    async def menu(self, interaction: Interaction):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
         embed_list = []
@@ -67,4 +67,4 @@ class UtilityCommands(app_commands.Group):
 
 
 async def setup(bot: STWBot):
-    bot.tree.add_command(UtilityCommands(bot))
+    bot.tree.add_command(HelpCommands(bot))
