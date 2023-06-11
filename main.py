@@ -157,16 +157,13 @@ class STWBot(commands.Bot):
         return True if isinstance(self.get_auth_session(discord_id), AuthSession) else False
 
     async def user_is_blacklisted(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_data_entry(discord_id))['is_blacklisted']
+        return (await self.mongo_db.search_data_entry(discord_id)).get('is_blacklisted', False)
 
     async def user_is_premium(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_data_entry(discord_id))['is_premium']
+        return (await self.mongo_db.search_data_entry(discord_id)).get('is_premium', False)
 
     async def user_setting_stay_signed_in(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_settings_entry(discord_id))['stay_signed_in']
-
-    async def user_setting_auto_daily(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_data_entry(discord_id))['auto_daily']
+        return (await self.mongo_db.search_settings_entry(discord_id)).get('stay_signed_in', True)
 
     async def app_command_error(self, interaction: Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.CommandOnCooldown):
