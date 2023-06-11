@@ -3,7 +3,7 @@ from discord import app_commands, Interaction
 from main import STWBot
 from core.accounts import FriendEpicAccount
 from components.embed import EmbedField
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.paginator import Paginator
 from resources.emojis import emojis
 
@@ -46,7 +46,7 @@ class FriendCommands(app_commands.Group):
 
         return {'fields': field_list, 'icon_url': icon_url}
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='list', description='View your friends list.')
@@ -61,7 +61,7 @@ class FriendCommands(app_commands.Group):
         )
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='incoming', description='View your incoming friend requests.')
@@ -76,7 +76,7 @@ class FriendCommands(app_commands.Group):
         )
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='outgoing', description='View your outgoing friend requests.')
@@ -91,7 +91,7 @@ class FriendCommands(app_commands.Group):
         )
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='suggested', description='View your suggested friends list.')
@@ -106,7 +106,7 @@ class FriendCommands(app_commands.Group):
         )
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='blocklist', description='View your list of blocked users.')
@@ -121,7 +121,7 @@ class FriendCommands(app_commands.Group):
         )
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.')
@@ -137,7 +137,7 @@ class FriendCommands(app_commands.Group):
 
         await self.bot.basic_response(interaction, f'Successfully friended `{friend_account.display}`.')
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.')
@@ -153,7 +153,7 @@ class FriendCommands(app_commands.Group):
 
         await self.bot.basic_response(interaction, f'Successfully unfriended `{friend_account.display}`.')
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.')
@@ -169,7 +169,7 @@ class FriendCommands(app_commands.Group):
 
         await self.bot.basic_response(interaction, f'Successfully blocked `{friend_account.display}`.')
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.')

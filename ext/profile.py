@@ -2,7 +2,7 @@ from discord import app_commands, Interaction
 
 from main import STWBot
 from core.fortnite import AccountResource
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.embed import CustomEmbed
 from resources.emojis import emojis
 
@@ -37,7 +37,7 @@ class ProfileCommands(app_commands.Group):
         return '\n'.join([f'> {resource.emoji} **{resource.quantity:,}**'
                           for resource in resources if resource.name in name_list]) or '> `None`'
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='resources', description='View your own or another player\'s account resources.')
@@ -54,7 +54,7 @@ class ProfileCommands(app_commands.Group):
             description=f'**IGN:** `{account.display}`'
         )
         embed.set_author(name='Profile Resources', icon_url=icon_url)
-        embed.set_footer(text='*Weapon/Hero Voucher counts may be incorrect due to an API issue.')
+        embed.set_footer(text='* Weapon/Hero Voucher counts may be incorrect due to an API issue.')
 
         for item in self._RESOURCE_MAPPING:
             embed.add_field(

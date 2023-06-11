@@ -4,7 +4,7 @@ from main import STWBot
 from core.errors import STWException
 from components.embed import CustomEmbed, EmbedField
 from components.login import StaticLoginView
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from resources.emojis import emojis
 
 
@@ -19,7 +19,7 @@ class AccountCommands(app_commands.Group):
         super().__init__(name=name)
         self.bot = bot
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_not_blacklisted()
     @app_commands.command(name='login', description='Log into your Epic Games account.')
     async def login(self, interaction: Interaction):
@@ -46,7 +46,7 @@ class AccountCommands(app_commands.Group):
         await interaction.followup.send(embed=instructions_embed, view=StaticLoginView(self.bot, interaction))
 
     # Users should have the ability to log out even if they are blacklisted.
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @app_commands.command(name='logout', description='Log out of your Epic Games account.')
     async def logout(self, interaction: Interaction):
@@ -54,7 +54,7 @@ class AccountCommands(app_commands.Group):
         await self.bot.del_auth_session(interaction.user.id)
         await self.bot.basic_response(interaction, 'Successfully logged out.')
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='info', description='View your Epic Games account information.')
@@ -111,7 +111,7 @@ class AccountCommands(app_commands.Group):
 
         await interaction.followup.send(embed=info_embed)
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(

@@ -3,7 +3,7 @@ from discord import app_commands, Interaction
 from main import STWBot
 from core.fortnite import Schematic
 from components.embed import EmbedField
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.paginator import Paginator
 from components.itemselect import RecycleSelectionMenu, UpgradeSelectionMenu, EvolveSelectionMenu
 from resources.emojis import emojis
@@ -45,7 +45,7 @@ class SchematicCommands(app_commands.Group):
 
         return embed_fields
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.', name='Name of the schematic.')
@@ -68,7 +68,7 @@ class SchematicCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(name='Name of the schematic.', increment='The desired increase in schematic level.')
@@ -94,7 +94,7 @@ class SchematicCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=view)
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(name='Name of the schematic.', material='The desired upgrade path of the schematic.')
@@ -123,7 +123,7 @@ class SchematicCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=view)
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(name='Name of the schematic.')

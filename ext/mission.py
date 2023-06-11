@@ -5,7 +5,7 @@ from discord import app_commands, Interaction
 from main import STWBot
 from core.fortnite import MissionAlert
 from components.embed import EmbedField
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.paginator import Paginator
 from resources.emojis import emojis
 
@@ -57,7 +57,7 @@ class MissionCommands(app_commands.Group):
 
         return ordered_list
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(theater='Choose a specific zone (e.g. Twine Peaks) to view.')
@@ -105,7 +105,7 @@ class MissionCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embed_list[0], view=Paginator(interaction, embed_list))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='vbucks', description='View today\'s VBuck mission alerts.')
@@ -136,7 +136,7 @@ class MissionCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='survivors', description='View today\'s legendary/mythic survivor mission alerts.')

@@ -2,7 +2,7 @@ from discord import app_commands, Interaction
 
 from main import STWBot
 from components.embed import CustomEmbed
-from components.decorators import is_not_blacklisted
+from components.decorators import is_not_blacklisted, non_premium_cooldown
 from components.paginator import Paginator
 from resources.emojis import emojis
 
@@ -18,6 +18,7 @@ class HelpCommands(app_commands.Group):
         super().__init__(name=name)
         self.bot = bot
 
+    @non_premium_cooldown()
     @is_not_blacklisted()
     @app_commands.command(name='menu', description='View information about the bot\'s commands.')
     async def menu(self, interaction: Interaction):
@@ -39,7 +40,8 @@ class HelpCommands(app_commands.Group):
                 group_embed = CustomEmbed(
                     interaction,
                     title=f'{group.name.capitalize()} Commands',
-                    description=f'{emojis["clock"]} **- 15s Cooldown**\n{emojis["premium"]} **- Premium Command**'
+                    description=f'{emojis["clock"]} **- 15s Cooldown (Non-Premium)**\n'
+                                f'{emojis["premium"]} **- Premium-Only Command**'
                 )
                 group_embed.set_author(name='Help Menu', icon_url=self.bot.user.avatar)
 

@@ -5,7 +5,7 @@ from discord import app_commands, Interaction
 from main import STWBot
 from core.fortnite import Survivor, LeadSurvivor
 from components.embed import EmbedField, CustomEmbed
-from components.decorators import is_not_blacklisted, is_logged_in
+from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.itemselect import RecycleSelectionMenu, UpgradeSelectionMenu, EvolveSelectionMenu
 from components.paginator import Paginator
 from resources.emojis import emojis
@@ -22,7 +22,7 @@ class SurvivorCommands(app_commands.Group):
         super().__init__(name=name)
         self.bot = bot
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.command(name='squads', description='View your own or another player\'s survivor squads.')
@@ -94,7 +94,7 @@ class SurvivorCommands(app_commands.Group):
 
         return embed_fields
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(display='Epic account display name.', personality='Search for survivors by personality.')
@@ -124,7 +124,7 @@ class SurvivorCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(personality='Personality of the survivor.', increment='Desired increase in survivor level.')
@@ -157,7 +157,7 @@ class SurvivorCommands(app_commands.Group):
 
         await inter.followup.send(embed=embeds[0], view=view)
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(personality='Personality of the survivor.')
@@ -190,7 +190,7 @@ class SurvivorCommands(app_commands.Group):
 
         await interaction.followup.send(embed=embeds[0], view=view)
 
-    @app_commands.checks.cooldown(1, 15)
+    @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
     @app_commands.describe(personality='Personality of the survivor.')
