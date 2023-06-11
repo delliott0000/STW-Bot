@@ -134,6 +134,21 @@ emojis = {
         'Hero XP': '<:HeroXP:1115066276600103022>',
         'Schematic XP': '<:SchematicXP:1115066288771964968>',
         'Tickets': '<a:Tickets_a:1115065217618018335>',
-        'VBucks': '<:VBuck:1115071578842083328>'
+        'VBucks': '<:VBuck:1115071578842083328>',
+        'Trap Supercharger': '<:TrapSC:1117273971038113802>',
+        'Weapon Supercharger': '<:WeaponSC:1117273996174569503>',
+        'Hero Supercharger': '<:HeroSC:1117273982731817101>',
+        'Survivor Supercharger': '<:SurvivorSC:1117273958899781672>',
+        'Core RE-PERK!': '<:CoreReperk:1117276026561638501>',
+        'Trap Designs': '<:TrapDesigns:1117278759087767634>',
+        'Weapon Designs': '<:WeaponDesigns:1117278790335340544>',
+        'Training Manual': '<:TrainingManual:1117278773474238495>',
+        'Legendary Flux': '<:LegendaryFlux:1087140389531701258>',
+        'Epic Flux': '<:EpicFlux:1087140374729990235>',
+        'Rare Flux': '<:RareFlux:1087140361954152528>',
+        'Weapon Research Voucher': '<:WeaponVoucher:1117281774846877746>',
+        'Hero Recruitment Voucher': '<:HeroVoucher:1117281786662236271>',
+        'Gold': '<:Gold:1117349169477193730>',
+        'X-Ray Tickets': '<:XRayTicket:1117349077043118080>'
     }
 }

@@ -413,6 +413,12 @@ class SurvivorSquad:
 
 class AccountResource(AccountItem):
 
+    """
+    Represents an account resource, such as pure drops of rain or a survivor supercharger.
+
+    Does not include inventory items or crafting ingredients.
+    """
+
     def __init__(
             self,
             account,
@@ -438,6 +444,10 @@ class MissionAlertReward(AccountResource):
     Unlike `AccountResource`, these are not "real" items, rather they're more akin to "imaginary" items.
 
     Hence, they do not actually have a unique item ID nor an owner account.
+
+    These also don't necessarily have to be a "resource" as such (despite the class inheritance suggesting otherwise).
+
+    They could also be schematics, heroes or other types of items.
     """
 
     def __init__(

@@ -3,8 +3,8 @@ from typing import Union, Optional
 
 from dateutil import parser
 
-from core.errors import UnknownItem, BadItemData
-from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad
+from core.errors import UnknownItem, BadItemData, NotFound, BadRequest
+from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad, AccountResource
 
 
 class ExternalConnection:
@@ -64,11 +64,10 @@ class PartialEpicAccount:
     async def icon_url(self) -> Optional[str]:
         if self._icon_url is None:
 
-            data = await self.fort_data()
-
             try:
+                data = await self.fort_data()
                 items = data['profileChanges'][0]['profile']['items']
-            except KeyError:
+            except (KeyError, NotFound):
                 return
 
             for item in items:
@@ -76,17 +75,14 @@ class PartialEpicAccount:
 
                     try:
                         char_id = items[item]['attributes']['locker_slots_data']['slots']['Character']['items'][0][16:]
-                    except KeyError:
-                        continue
 
-                    character_data = await self.auth_session.client.request(
-                        'get',
-                        f'https://fortnite-api.com/v2/cosmetics/br/{char_id}'
-                    )
-
-                    try:
+                        character_data = await self.auth_session.client.request(
+                            'get',
+                            f'https://fortnite-api.com/v2/cosmetics/br/{char_id}'
+                        )
                         self._icon_url = character_data['data']['images']['icon']
-                    except KeyError:
+
+                    except (KeyError, BadRequest):
                         continue
 
                     break
@@ -133,6 +129,21 @@ class PartialEpicAccount:
 
         survivors.sort(key=lambda x: x.base_power_level, reverse=True)
         return survivors
+
+    async def resources(self) -> list[AccountResource]:
+        items = await self.fort_items()
+        resources = []
+
+        for item in items:
+            if items[item]['templateId'].startswith('AccountResource'):
+                try:
+                    resource = AccountResource(self, item, items[item]['templateId'], items[item]['quantity'])
+                except UnknownItem:
+                    continue
+
+                resources.append(resource)
+
+        return resources
 
     @staticmethod
     def _squad_name_mapping() -> dict:
