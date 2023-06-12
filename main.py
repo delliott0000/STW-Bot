@@ -144,10 +144,7 @@ class STWBot(commands.Bot):
         if not isinstance(auth_session, AuthSession):
             return
 
-        try:
-            await auth_session.kill()
-        except Unauthorized:
-            pass
+        await auth_session.kill()
 
         auth_session.del_own_account()
         del auth_session
@@ -302,7 +299,7 @@ class STWBot(commands.Bot):
 
     async def setup_hook(self):
         logging.info(f'Logging in as {self.user} (ID: {self.user.id})...')
-        logging.info(f'Owners: {", ".join([str(await self.fetch_user(user_id)) for user_id in self.owner_ids])}')
+        logging.info(f'Owners: {", ".join([(await self.fetch_user(user_id)).name for user_id in self.owner_ids])}')
 
         self._session = ClientSession()
         self.epic_api = EpicGamesClient(self._session)
@@ -331,22 +328,31 @@ class STWBot(commands.Bot):
                 logging.fatal('Intents are being requested that have not been enabled in the developer portal.')
 
         async def _cleanup():
-            # noinspection PyBroadException
+            kill_session_tasks = []
+
+            for auth_session in self._cached_auth_sessions.values():
+                kill_session_tasks.append(asyncio.ensure_future(auth_session.kill()))
+
+            await asyncio.gather(*kill_session_tasks)
+
             try:
                 await self._session.close()
-            except Exception:
+            except AttributeError:
                 pass
+
             self.renew_sessions.stop()
             self.refresh_mission_alerts.stop()
 
-        try:
-            asyncio.run(_bot_runner())
-        except (KeyboardInterrupt, SystemExit):
-            logging.info('Received signal to terminate bot and event loop.')
-        finally:
-            logging.info('Cleaning up tasks and connections...')
-            asyncio.run(_cleanup())
-            logging.info('Done. Have a nice day!')
+        # noinspection PyUnresolvedReferences
+        with asyncio.Runner() as asyncio_runner:
+            try:
+                asyncio_runner.run(_bot_runner())
+            except (KeyboardInterrupt, SystemExit):
+                logging.info('Received signal to terminate bot and event loop.')
+            finally:
+                logging.info('Cleaning up tasks and connections...')
+                asyncio_runner.run(_cleanup())
+                logging.info('Done. Have a nice day!')
 
 
 if __name__ == '__main__':

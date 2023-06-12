@@ -111,10 +111,13 @@ class AuthSession:
             )
 
     async def kill(self) -> None:
-        await self.access_request(
-            'delete',
-            self.client.kill_token_url + f'/{self.access_token}'
-        )
+        try:
+            await self.access_request(
+                'delete',
+                self.client.kill_token_url + f'/{self.access_token}'
+            )
+        except Unauthorized:
+            pass
         self._expired = True
 
     async def get_own_account(self) -> FullEpicAccount:
