@@ -159,8 +159,66 @@ class MissionCommands(app_commands.Group):
             fields,
             field_limit=4,
             description=f'**Total Missions:** `{len(leg_surv_missions)}`',
-            author_name='Legendary Survivor Alerts',
+            author_name='Survivor Alerts',
             author_icon=emojis['survivor_url']
+        )
+
+        await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
+
+    @non_premium_cooldown()
+    @is_logged_in()
+    @is_not_blacklisted()
+    @app_commands.command(name='schematics', description='View today\'s legendary schematic mission alerts.')
+    async def schematics(self, interaction: Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
+        missions = await self.bot.missions()
+
+        schematic_missions = []
+
+        for mission in missions:
+            for reward in mission.alert_rewards:
+                if 'Schematic' in reward.template_id and reward.rarity == 'legendary':
+                    schematic_missions.append(mission)
+                    break
+
+        fields = self.missions_to_fields(schematic_missions, include_theater=True)
+        embeds = self.bot.fields_to_embeds(
+            interaction,
+            fields,
+            field_limit=4,
+            description=f'**Total Missions:** `{len(schematic_missions)}`',
+            author_name='Schematic Alerts',
+            author_icon=emojis['schematic_url']
+        )
+
+        await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
+
+    @non_premium_cooldown()
+    @is_logged_in()
+    @is_not_blacklisted()
+    @app_commands.command(name='heroes', description='View today\'s legendary hero mission alerts.')
+    async def heroes(self, interaction: Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
+        missions = await self.bot.missions()
+
+        hero_missions = []
+
+        for mission in missions:
+            for reward in mission.alert_rewards:
+                if 'Hero' in reward.template_id and reward.rarity == 'legendary':
+                    hero_missions.append(mission)
+                    break
+
+        fields = self.missions_to_fields(hero_missions, include_theater=True)
+        embeds = self.bot.fields_to_embeds(
+            interaction,
+            fields,
+            field_limit=4,
+            description=f'**Total Missions:** `{len(hero_missions)}`',
+            author_name='Hero Alerts',
+            author_icon=emojis['hero_url']
         )
 
         await interaction.followup.send(embed=embeds[0], view=Paginator(interaction, embeds))
