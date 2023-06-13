@@ -72,7 +72,7 @@ class ProfileCommands(app_commands.Group):
                 name=prev_field.name,
                 value=prev_field.value + f'\n> {emojis["resources"]["Tickets"]} **{tickets.quantity:,}**'
             )
-        except KeyError:
+        except IndexError:
             pass
 
         await interaction.followup.send(embed=embed)

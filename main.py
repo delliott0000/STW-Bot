@@ -313,13 +313,13 @@ class STWBot(commands.Bot):
 
     def run_bot(self):
 
-        async def _bot_runner():
+        async def _run_bot():
             for filename in os.listdir('./ext'):
                 if filename.endswith('.py'):
                     try:
                         await self.load_extension(f'ext.{filename[:-3]}')
-                    except (commands.ExtensionFailed, commands.NoEntryPointError) as err:
-                        logging.error(f'Extension {filename} could not be loaded: {err}')
+                    except (commands.ExtensionFailed, commands.NoEntryPointError) as extension_error:
+                        logging.error(f'Extension {filename} could not be loaded: {extension_error}')
             try:
                 await self.start(config.TOKEN)
             except LoginFailure:
@@ -343,15 +343,17 @@ class STWBot(commands.Bot):
             self.renew_sessions.cancel()
             self.refresh_mission_alerts.cancel()
 
+            await self.close()
+
         # noinspection PyUnresolvedReferences
-        with asyncio.Runner() as asyncio_runner:
+        with asyncio.Runner() as runner:
             try:
-                asyncio_runner.run(_bot_runner())
+                runner.run(_run_bot())
             except (KeyboardInterrupt, SystemExit):
                 logging.info('Received signal to terminate bot and event loop.')
             finally:
                 logging.info('Cleaning up tasks and connections...')
-                asyncio_runner.run(_cleanup())
+                runner.run(_cleanup())
                 logging.info('Done. Have a nice day!')
 
 
