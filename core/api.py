@@ -226,7 +226,7 @@ class AsyncRequestsClient:
         ) as response:
             data = await to_dict(response)
 
-            logging.info(f'({response.status}) {method.upper() + "       "[:7 - len(method)]} {url}')
+            logging.info(f'({response.status}) {method.upper() + "      "[:6 - len(method)]} {url}')
 
             # Return our data if the HTTP request was successful
             if response.status < 300:

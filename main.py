@@ -340,8 +340,8 @@ class STWBot(commands.Bot):
             except AttributeError:
                 pass
 
-            self.renew_sessions.stop()
-            self.refresh_mission_alerts.stop()
+            self.renew_sessions.cancel()
+            self.refresh_mission_alerts.cancel()
 
         # noinspection PyUnresolvedReferences
         with asyncio.Runner() as asyncio_runner:
