@@ -335,10 +335,8 @@ class STWBot(commands.Bot):
 
             await asyncio.gather(*kill_session_tasks)
 
-            try:
+            if self._session:
                 await self._session.close()
-            except AttributeError:
-                pass
 
             self.renew_sessions.cancel()
             self.refresh_mission_alerts.cancel()
