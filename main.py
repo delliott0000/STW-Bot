@@ -196,7 +196,7 @@ class STWBot(commands.Bot):
             await self.refresh_mission_alerts()
         return self._mission_alert_cache
 
-    @tasks.loop(time=dt_time(second=15))
+    @tasks.loop(time=dt_time(minute=1))
     async def refresh_mission_alerts(self):
         self._mission_alert_cache = []
 
@@ -210,7 +210,7 @@ class STWBot(commands.Bot):
             except HTTPException:
                 continue
         else:
-            logging.error('Unable to retrieve today\'s mission data, aborting...')
+            logging.error('Unable to retrieve today\'s mission data, cancelling...')
             return
 
         theaters = data.get('theaters')
@@ -328,6 +328,9 @@ class STWBot(commands.Bot):
                 logging.fatal('Intents are being requested that have not been enabled in the developer portal.')
 
         async def _cleanup():
+            self.renew_sessions.cancel()
+            self.refresh_mission_alerts.cancel()
+
             kill_session_tasks = []
 
             for auth_session in self._cached_auth_sessions.values():
@@ -337,9 +340,6 @@ class STWBot(commands.Bot):
 
             if self._session:
                 await self._session.close()
-
-            self.renew_sessions.cancel()
-            self.refresh_mission_alerts.cancel()
 
             await self.close()
 
