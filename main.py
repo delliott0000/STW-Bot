@@ -220,7 +220,7 @@ class STWBot(commands.Bot):
         theater_data = await self._session.get(self._fnc_base_url + self._all_theaters)
         theater_json = await theater_data.json()
 
-        for i, theater in enumerate(alerts):
+        async def _add_mission(i: int, theater: dict):
 
             theater_id = theater.get('theaterId')
             for _theater in theaters:
@@ -254,7 +254,11 @@ class STWBot(commands.Bot):
                         if name is None:
                             break
 
-                        power = theater_json['jsonOutput'][0]['Rows'][__theater]['ThreatDisplayName']['sourceString']
+                        try:
+                            power = \
+                                theater_json['jsonOutput'][0]['Rows'][__theater]['ThreatDisplayName']['sourceString']
+                        except KeyError:
+                            power = '0'
 
                         self._mission_alert_cache.append(MissionAlert(
                             name=name,
@@ -265,6 +269,9 @@ class STWBot(commands.Bot):
                         ))
 
                         break
+
+        add_mission_tasks = [asyncio.ensure_future(_add_mission(i, theater)) for i, theater in enumerate(alerts)]
+        await asyncio.gather(*add_mission_tasks)
 
         logging.info('Success!')
 
