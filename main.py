@@ -238,7 +238,11 @@ class STWBot(commands.Bot):
                 tile_theme_path = data['theaters'][i]['tiles'][tile_index]['zoneTheme']
                 tile_theme_file = await self._session.get(self._fnc_base_url + tile_theme_path.split('.')[0])
                 tile_theme_json = await tile_theme_file.json()
-                tile_theme_name = tile_theme_json['jsonOutput'][1]['Properties']['ZoneName']['sourceString']
+
+                try:
+                    tile_theme_name = tile_theme_json['jsonOutput'][1]['Properties']['ZoneName']['sourceString']
+                except KeyError:
+                    tile_theme_name = 'Unknown'
 
                 for mission in missions[i].get('availableMissions'):
                     if mission.get('tileIndex') == tile_index:
