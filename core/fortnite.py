@@ -105,10 +105,10 @@ class Upgradable(Recyclable):
     """
     Any item that can be upgraded and evolved.
 
-    All upgradable items can also be recycled, but vice versa, hence the class inheritance.
+    All upgradable items can also be recycled, but not necessarily vice versa, hence the class inheritance.
     """
 
-    async def upgrade(self):
+    async def upgrade(self) -> None:
         await self.account.auth_session.profile_request(
             route='client',
             operation='UpgradeItem',
@@ -120,7 +120,7 @@ class Upgradable(Recyclable):
         )
         self.level += 1
 
-    async def evolve(self, index: int = 0):
+    async def evolve(self, index: int = 0) -> None:
         await self.account.auth_session.profile_request(
             route='client',
             operation='ConvertItem',
