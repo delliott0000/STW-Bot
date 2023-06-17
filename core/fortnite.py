@@ -169,22 +169,17 @@ class Schematic(Upgradable):
 
     @property
     def material(self):
-        material = None
         if self.tier == 4 and '_ore_' in self.template_id:
-            material = 'Obsidian'
+            return 'Obsidian'
         elif self.tier == 4:
-            material = 'Shadow Shard'
+            return 'Shadow Shard'
         elif self.tier == 5 and '_ore_' in self.template_id:
-            material = 'Brightcore'
+            return 'Brightcore'
         elif self.tier == 5:
-            material = 'Sunbeam'
-        return material
+            return 'Sunbeam'
 
     def get_conversion_index(self, target_material: str):
-        try:
-            return 0 if self.tier != 3 else {'': 1, 'Crystal': 1, 'Ore': 0}[target_material]
-        except KeyError:
-            return 0
+        return 0 if self.tier != 3 else {'': 1, 'Crystal': 1, 'Ore': 0}.get(target_material, 0)
 
 
 class SchematicPerk:
