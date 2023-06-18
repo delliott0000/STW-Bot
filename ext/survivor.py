@@ -3,10 +3,11 @@ from typing import Union
 from discord import app_commands, Interaction
 
 from main import STWBot
+from core.errors import STWException
 from core.fortnite import Survivor, LeadSurvivor
 from components.embed import EmbedField, CustomEmbed
 from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
-from components.itemselect import RecycleSelectionMenu, UpgradeSelectionMenu, EvolveSelectionMenu
+from components.itemselect import RecycleSelectionMenu, UpgradeSelectionMenu
 from components.paginator import Paginator
 from resources.emojis import emojis
 
@@ -102,7 +103,7 @@ class SurvivorCommands(app_commands.Group):
         'Curious', 'Dependable', 'Cooperative', 'Pragmatic', 'Adventurous', 'Competitive', 'Dreamer', 'Analytical'
     ]])
     @app_commands.command(name='list', description='View your own or another player\'s survivors.')
-    async def list(self, interaction: Interaction, display: str = None, personality: app_commands.Choice[str] = None):
+    async def list(self, interaction: Interaction, personality: app_commands.Choice[str] = None, display: str = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
         auth = self.bot.get_auth_session(interaction.user.id)
@@ -112,8 +113,10 @@ class SurvivorCommands(app_commands.Group):
         if personality is not None:
             survivors = [survivor for survivor in survivors if survivor.personality == personality.value]
 
-        embed_fields = self.survivors_to_fields(survivors)
+        if not survivors:
+            raise STWException(f'Survivors not found.')
 
+        embed_fields = self.survivors_to_fields(survivors)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
@@ -127,66 +130,50 @@ class SurvivorCommands(app_commands.Group):
     @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
-    @app_commands.describe(personality='Personality of the survivor.', increment='Desired increase in survivor level.')
+    @app_commands.describe(
+        personality='Personality of the survivor.',
+        level='The desired level of the schematic.')
     @app_commands.choices(personality=[app_commands.Choice(name=personality, value=personality) for personality in [
         'Curious', 'Dependable', 'Cooperative', 'Pragmatic', 'Adventurous', 'Competitive', 'Dreamer', 'Analytical'
     ]])
     @app_commands.command(name='upgrade', description='Upgrade one of your survivors.')
-    async def upgrade(self, inter: Interaction, personality: app_commands.Choice[str] = None, increment: int = 10):
-        await inter.response.defer(thinking=True, ephemeral=True)
-
-        auth = self.bot.get_auth_session(inter.user.id)
-        account = await auth.get_own_account()
-        survivors = await account.survivors()
-
-        if personality is not None:
-            survivors = [survivor for survivor in survivors if survivor.personality == personality.value]
-
-        embed_fields = self.survivors_to_fields(survivors)
-
-        embeds = self.bot.fields_to_embeds(
-            inter,
-            embed_fields,
-            description=inter.user.mention,
-            author_name='Upgrade Survivors',
-            author_icon=await account.icon_url()
-        )
-
-        view = Paginator(inter, embeds)
-        view.add_item(UpgradeSelectionMenu(self.bot, survivors, increment=increment))
-
-        await inter.followup.send(embed=embeds[0], view=view)
-
-    @non_premium_cooldown()
-    @is_logged_in()
-    @is_not_blacklisted()
-    @app_commands.describe(personality='Personality of the survivor.')
-    @app_commands.choices(personality=[app_commands.Choice(name=personality, value=personality) for personality in [
-        'Curious', 'Dependable', 'Cooperative', 'Pragmatic', 'Adventurous', 'Competitive', 'Dreamer', 'Analytical'
-    ]])
-    @app_commands.command(name='evolve', description='Evolve one of your survivors.')
-    async def evolve(self, interaction: Interaction, personality: app_commands.Choice[str] = None):
+    async def upgrade(
+            self,
+            interaction: Interaction,
+            personality: app_commands.Choice[str] = None,
+            level: int = 50
+    ):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
-        auth = self.bot.get_auth_session(interaction.user.id)
-        account = await auth.get_own_account()
+        if level not in range(2, 61):
+            raise STWException(f'Level `{level}` is invalid, please try again.')
+
+        account = await self.bot.get_full_account(interaction.user.id)
         survivors = await account.survivors()
 
         if personality is not None:
             survivors = [survivor for survivor in survivors if survivor.personality == personality.value]
 
-        embed_fields = self.survivors_to_fields(survivors)
+        if not survivors:
+            raise STWException(f'Survivors not found.')
 
+        embed_fields = self.survivors_to_fields(survivors)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
             description=interaction.user.mention,
-            author_name='Evolve Survivors',
+            author_name='Upgrade Survivors',
             author_icon=await account.icon_url()
         )
 
         view = Paginator(interaction, embeds)
-        view.add_item(EvolveSelectionMenu(self.bot, survivors))
+        # noinspection PyTypeChecker
+        view.add_item(UpgradeSelectionMenu(
+            self.bot,
+            interaction.command,
+            survivors,
+            level
+        ))
 
         await interaction.followup.send(embed=embeds[0], view=view)
 
@@ -201,15 +188,16 @@ class SurvivorCommands(app_commands.Group):
     async def recycle(self, interaction: Interaction, personality: app_commands.Choice[str] = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
-        auth = self.bot.get_auth_session(interaction.user.id)
-        account = await auth.get_own_account()
+        account = await self.bot.get_full_account(interaction.user.id)
         survivors = await account.survivors()
 
         if personality is not None:
             survivors = [survivor for survivor in survivors if survivor.personality == personality.value]
 
-        embed_fields = self.survivors_to_fields(survivors)
+        if not survivors:
+            raise STWException(f'Survivors not found.')
 
+        embed_fields = self.survivors_to_fields(survivors)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
@@ -219,7 +207,12 @@ class SurvivorCommands(app_commands.Group):
         )
 
         view = Paginator(interaction, embeds)
-        view.add_item(RecycleSelectionMenu(self.bot, survivors))
+        # noinspection PyTypeChecker
+        view.add_item(RecycleSelectionMenu(
+            self.bot,
+            interaction.command,
+            survivors
+        ))
 
         await interaction.followup.send(embed=embeds[0], view=view)
 

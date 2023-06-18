@@ -1,9 +1,9 @@
 from typing import Union
 
-from discord import ui, SelectOption, Interaction
+from discord import ui, SelectOption, Interaction, app_commands
 
 from main import STWBot
-from core.errors import BadRequest
+from core.errors import STWException, BadRequest
 from core.fortnite import Recyclable, Upgradable, Schematic
 
 
@@ -21,6 +21,7 @@ class RecycleSelectionMenu(ui.Select):
     def __init__(
             self,
             bot: STWBot,
+            command: app_commands.Command,
             items: list[Union[Recyclable, Upgradable]]
     ):
         selectable = items[:25] if len(items) > 24 else items
@@ -31,6 +32,7 @@ class RecycleSelectionMenu(ui.Select):
         )
 
         self.bot = bot
+        self.command = command
         self.items = selectable
 
     def get_selected_item(self, interaction: Interaction):
@@ -39,15 +41,16 @@ class RecycleSelectionMenu(ui.Select):
     async def callback(self, interaction: Interaction):
         item = self.get_selected_item(interaction)
 
-        if item.favourite is True:
-            await self.bot.bad_response(interaction, 'Favorite items can not be recycled.')
-            return
-        await item.recycle()
+        if item.favourite is not True:
+            await item.recycle()
 
-        await self.bot.basic_response(
-            interaction,
-            f'Successfully recycled `{item.name}`.'
-        )
+        else:
+            recycle_exception = STWException('Favorite items can not be recycled.')
+            command_exception = app_commands.CommandInvokeError(self.command, recycle_exception)
+            await self.bot.app_command_error(interaction, command_exception)
+            return
+
+        await self.bot.basic_response(interaction, f'Successfully recycled `{item.name}`.')
 
 
 class UpgradeSelectionMenu(RecycleSelectionMenu):
@@ -55,56 +58,34 @@ class UpgradeSelectionMenu(RecycleSelectionMenu):
     def __init__(
             self,
             bot: STWBot,
+            command: app_commands.Command,
             items: list[Upgradable],
-            increment: int = 10
-    ):
-        super().__init__(bot, items)
-
-        self.increment = increment
-
-    async def callback(self, interaction: Interaction):
-        item = self.get_selected_item(interaction)
-
-        count = 0
-        for i in range(self.increment):
-            try:
-                await item.upgrade()
-                count += 1
-            except BadRequest as error:
-                if count == 0:
-                    await self.bot.bad_response(interaction, str(error))
-                    return
-                break
-
-        await self.bot.basic_response(
-            interaction,
-            f'Successfully upgraded `{item.name}` to level `{item.level}`.'
-        )
-
-
-class EvolveSelectionMenu(RecycleSelectionMenu):
-
-    def __init__(
-            self,
-            bot: STWBot,
-            items: list[Upgradable],
+            level: int,
             material: str = ''
     ):
-        super().__init__(bot, items)
+        super().__init__(bot, command, items)
 
+        self.level = level
         self.material = material
+        self.tier = min((level - 1) // 10 + 1, 5)
 
     async def callback(self, interaction: Interaction):
         item = self.get_selected_item(interaction)
 
-        index = item.get_conversion_index(target_material=self.material) if isinstance(item, Schematic) else 0
-        try:
-            await item.evolve(index=index)
-        except BadRequest as error:
-            await self.bot.bad_response(interaction, str(error))
+        if self.level <= item.level:
+            upgrade_exception = STWException(f'Invalid target level for item `{item.item_id}`.')
+            command_exception = app_commands.CommandInvokeError(self.command, upgrade_exception)
+            await self.bot.app_command_error(interaction, command_exception)
             return
 
-        await self.bot.basic_response(
-            interaction,
-            f'Successfully evolved `{item.name}` to tier `{item.tier}`.'
-        )
+        index = item.get_conversion_index(self.material, self.tier) if isinstance(item, Schematic) else -1
+
+        try:
+            await item.bulk_upgrade(self.level, self.tier, index=index)
+
+        except BadRequest as error:
+            command_exception = app_commands.CommandInvokeError(self.command, error)
+            await self.bot.app_command_error(interaction, command_exception)
+            return
+
+        await self.bot.basic_response(interaction, f'`{item.name}` has been upgraded to level `{item.level}`!')

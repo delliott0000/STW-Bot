@@ -4,7 +4,7 @@ from typing import Optional
 # This is necessary as not all data can be retrieved via HTTP request, some of it is hard-coded in the game
 from resources.emojis import emojis
 from resources.lookup import stringList
-from core.errors import UnknownItem, BadItemData
+from core.errors import BadRequest, UnknownItem, BadItemData
 
 
 class BaseEntity:
@@ -108,31 +108,41 @@ class Upgradable(Recyclable):
     All upgradable items can also be recycled, but not necessarily vice versa, hence the class inheritance.
     """
 
-    async def upgrade(self) -> None:
-        await self.account.auth_session.profile_request(
-            route='client',
-            operation='UpgradeItem',
-            profile_id='campaign',
-            json={
-                "targetItemId":
-                    self.item_id
-            }
-        )
-        self.level += 1
+    # `UpgradeItemBulk` endpoint requires our desired tier as a lower-case Roman numeral.
+    __mapping = {1: 'i', 2: 'ii', 3: 'iii', 4: 'iv', 5: 'v'}
 
-    async def evolve(self, index: int = 0) -> None:
-        await self.account.auth_session.profile_request(
-            route='client',
-            operation='ConvertItem',
-            profile_id='campaign',
-            json={
-                "targetItemId":
-                    self.item_id,
-                "conversionIndex":
-                    index
-            }
-        )
-        self.tier += 1
+    async def bulk_upgrade(self, level: int, tier: int, index: int = -1, retry: bool = False) -> None:
+        try:
+            await self.account.auth_session.profile_request(
+                route='client',
+                operation='UpgradeItemBulk',
+                json={
+                    'targetItemId':
+                        self.item_id,
+                    'desiredLevel':
+                        level,
+                    'desiredTier':
+                        self.__class__.__mapping.get(tier, 'v'),
+                    'conversionRecipeIndexChoice':
+                        index
+                }
+            )
+
+        # Encase we try to upgrade a non-compatible schematic (e.g. a launcher) to "Crystal".
+        # Automatically retry, upgrading to "Ore" instead.
+        except BadRequest as error:
+
+            if tier > 3 and index == 1 and retry is False:
+                await self.bulk_upgrade(level, tier, index=0, retry=True)
+                return
+
+            raise error
+
+        self.level = level
+        self.tier = tier
+
+        if isinstance(self, Schematic) and self.tier > 3 and index == 1:
+            self.template_id = self.template_id.replace('_ore_', '_crystal_')
 
 
 class Schematic(Upgradable):
@@ -178,8 +188,10 @@ class Schematic(Upgradable):
         elif self.tier == 5:
             return 'Sunbeam'
 
-    def get_conversion_index(self, target_material: str):
-        return 0 if self.tier != 3 else {'': 1, 'Crystal': 1, 'Ore': 0}.get(target_material, 0)
+    def get_conversion_index(self, target_material: str, target_tier: int) -> int:
+        if self.tier <= 3 and target_tier > 3:
+            return {'Crystal': 1, 'Ore': 0}.get(target_material, 1)
+        return -1
 
 
 class SchematicPerk:
