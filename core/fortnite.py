@@ -4,7 +4,7 @@ from typing import Optional
 # This is necessary as not all data can be retrieved via HTTP request, some of it is hard-coded in the game
 from resources.emojis import emojis
 from resources.lookup import stringList
-from core.errors import BadRequest, UnknownItem, BadItemData
+from core.errors import UnknownItem, BadItemData
 
 
 class BaseEntity:
@@ -111,32 +111,21 @@ class Upgradable(Recyclable):
     # `UpgradeItemBulk` endpoint requires our desired tier as a lower-case Roman numeral.
     __mapping = {1: 'i', 2: 'ii', 3: 'iii', 4: 'iv', 5: 'v'}
 
-    async def bulk_upgrade(self, level: int, tier: int, index: int = -1, retry: bool = False) -> None:
-        try:
-            await self.account.auth_session.profile_request(
-                route='client',
-                operation='UpgradeItemBulk',
-                json={
-                    'targetItemId':
-                        self.item_id,
-                    'desiredLevel':
-                        level,
-                    'desiredTier':
-                        self.__class__.__mapping.get(tier, 'v'),
-                    'conversionRecipeIndexChoice':
-                        index
-                }
-            )
-
-        # Encase we try to upgrade a non-compatible schematic (e.g. a launcher) to "Crystal".
-        # Automatically retry, upgrading to "Ore" instead.
-        except BadRequest as error:
-
-            if tier > 3 and index == 1 and retry is False:
-                await self.bulk_upgrade(level, tier, index=0, retry=True)
-                return
-
-            raise error
+    async def bulk_upgrade(self, level: int, tier: int, index: int = -1) -> None:
+        await self.account.auth_session.profile_request(
+            route='client',
+            operation='UpgradeItemBulk',
+            json={
+                'targetItemId':
+                    self.item_id,
+                'desiredLevel':
+                    level,
+                'desiredTier':
+                    self.__class__.__mapping.get(tier, 'v'),
+                'conversionRecipeIndexChoice':
+                    index
+            }
+        )
 
         self.level = level
         self.tier = tier
