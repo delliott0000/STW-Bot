@@ -1,10 +1,11 @@
+import logging
 from math import floor
 from typing import Union, Optional
 
 from dateutil import parser
 
 from core.errors import UnknownItem, BadItemData, NotFound, BadRequest
-from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad, AccountResource
+from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad, Hero, AccountResource
 
 
 class ExternalConnection:
@@ -101,7 +102,8 @@ class PartialEpicAccount:
             if items[item]['templateId'].startswith('Schematic:sid'):
                 try:
                     schematic = Schematic(self, item, items[item]['templateId'], items[item]['attributes'])
-                except UnknownItem:
+                except UnknownItem as error:
+                    logging.error(error)
                     continue
 
                 schematics.append(schematic)
@@ -122,7 +124,8 @@ class PartialEpicAccount:
                     survivor = LeadSurvivor(self, item, items[item]['templateId'], items[item]['attributes'])
                 else:
                     continue
-            except (UnknownItem, BadItemData):
+            except (UnknownItem, BadItemData) as error:
+                logging.error(error)
                 continue
 
             survivors.append(survivor)
@@ -130,15 +133,35 @@ class PartialEpicAccount:
         survivors.sort(key=lambda x: x.base_power_level, reverse=True)
         return survivors
 
+    async def heroes(self) -> list[Hero]:
+        items = await self.fort_items()
+        heroes = []
+
+        for item in items:
+
+            if items[item]['templateId'].startswith('Hero:hid'):
+                try:
+                    hero = Hero(self, item, items[item]['templateId'], items[item]['attributes'])
+                except UnknownItem as error:
+                    logging.error(error)
+                    continue
+
+                heroes.append(hero)
+
+        heroes.sort(key=lambda x: x.power_level, reverse=True)
+        return heroes
+
     async def resources(self) -> list[AccountResource]:
         items = await self.fort_items()
         resources = []
 
         for item in items:
+
             if items[item]['templateId'].startswith('AccountResource'):
                 try:
                     resource = AccountResource(self, item, items[item]['templateId'], items[item]['quantity'])
-                except UnknownItem:
+                except UnknownItem as error:
+                    logging.error(error)
                     continue
 
                 resources.append(resource)

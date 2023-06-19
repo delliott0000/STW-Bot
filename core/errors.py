@@ -90,12 +90,10 @@ class UnknownItem(STWException):
             item_id: str,
             template_id: str
     ):
-        self.message = f'Unknown item!\nItem ID: `{item_id}`\nTemplate ID: `{template_id}`'
+        self._message = f'Unknown item - Item ID: {item_id} - Template ID: {template_id}'
 
-    def __str__(
-            self
-    ):
-        return self.message
+    def __str__(self):
+        return self._message
 
 
 class BadItemData(STWException):
@@ -110,9 +108,7 @@ class BadItemData(STWException):
             template_id: str,
             attrs: dict
     ):
-        self.message = f'Malformed item!\nItem ID: `{item_id}`\nTemplate ID: `{template_id}`\nAttributes: `{attrs}`'
+        self._message = f'Malformed item - Item ID: {item_id} - Template ID: {template_id} - Attributes: {attrs}'
 
-    def __str__(
-            self
-    ):
-        return self.message
+    def __str__(self):
+        return self._message

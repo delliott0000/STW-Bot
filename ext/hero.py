@@ -2,7 +2,7 @@ from discord import app_commands, Interaction
 
 from main import STWBot
 from core.errors import STWException
-from core.fortnite import Schematic
+from core.fortnite import Hero
 from components.embed import EmbedField
 from components.decorators import is_not_blacklisted, is_logged_in, non_premium_cooldown
 from components.paginator import Paginator
@@ -11,35 +11,30 @@ from resources.emojis import emojis
 
 
 # noinspection PyUnresolvedReferences
-class SchematicCommands(app_commands.Group):
+class HeroCommands(app_commands.Group):
 
     def __init__(
             self,
             bot: STWBot,
-            name: str = 'schematic'
+            name: str = 'heroes'
     ):
         super().__init__(name=name)
         self.bot = bot
 
     @staticmethod
-    def schematics_to_fields(schematics: list[Schematic]) -> list[EmbedField]:
+    def heroes_to_fields(heroes: list[Hero]) -> list[EmbedField]:
         embed_fields = []
 
-        for schematic in schematics:
-
-            perks = f'> {emojis["perk"]} **Perks:** ' \
-                    f'{"".join([emojis["perk_rarities"][perk.rarity] for perk in schematic.perks])}\n' if \
-                schematic.perks else ''
+        for hero in heroes:
 
             embed_field = EmbedField(
-                name=f'{schematic.emoji} {schematic.name}',
-                value=f'> {emojis["level"]} **Level:** `{schematic.level}`\n'
-                      f'> {emojis["tiers"][schematic.tier][schematic.material]} **Tier:** `{schematic.tier}`\n'
-                      f'> {emojis["power"]} **PL:** `{schematic.power_level}`\n'
-                      f'{perks}'
-                      f'> {emojis["id"]} **Item ID:** `{schematic.item_id}`\n'
+                name=f'{hero.emoji} {hero.name}',
+                value=f'> {emojis["level"]} **Level:** `{hero.level}`\n'
+                      f'> {emojis["tiers"][hero.tier][None]} **Tier:** `{hero.tier}`\n'
+                      f'> {emojis["power"]} **PL:** `{hero.power_level}`\n'
+                      f'> {emojis["id"]} **Item ID:** `{hero.item_id}`\n'
                       f'> {emojis["favourite"]} **Favorite:** '
-                      f'{emojis["check" if schematic.favourite is True else "cross"]}'
+                      f'{emojis["check" if hero.favourite is True else "cross"]}'
             )
 
             embed_fields.append(embed_field)
@@ -49,24 +44,24 @@ class SchematicCommands(app_commands.Group):
     @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
-    @app_commands.describe(display='Epic account display name.', name='Name of the schematic.')
-    @app_commands.command(name='list', description='View your own or another player\'s schematics.')
+    @app_commands.describe(display='Epic account display name.', name='Name of the hero.')
+    @app_commands.command(name='list', description='View your own or another player\'s heroes.')
     async def list(self, interaction: Interaction, name: str = '', display: str = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
         auth = self.bot.get_auth_session(interaction.user.id)
         account = await auth.get_other_account(display=display) if display is not None else await auth.get_own_account()
-        schematics = [schematic for schematic in await account.schematics() if name.lower() in schematic.name.lower()]
+        heroes = [hero for hero in await account.heroes() if name.lower() in hero.name.lower()]
 
-        if not schematics:
-            raise STWException(f'Schematic `{name}` not found.')
+        if not heroes:
+            raise STWException(f'Hero `{name}` not found.')
 
-        embed_fields = self.schematics_to_fields(schematics)
+        embed_fields = self.heroes_to_fields(heroes)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
             description=f'**IGN:** `{account.display}`',
-            author_name='All Schematics',
+            author_name='All Heroes',
             author_icon=await account.icon_url()
         )
 
@@ -75,38 +70,26 @@ class SchematicCommands(app_commands.Group):
     @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
-    @app_commands.describe(
-        name='Name of the schematic.',
-        level='The desired level of the schematic.',
-        material='The desired upgrade path of the schematic (if applicable).')
-    @app_commands.choices(material=[
-        app_commands.Choice(name='Ore', value='Ore'),
-        app_commands.Choice(name='Crystal', value='Crystal')])
-    @app_commands.command(name='upgrade', description='Upgrade one of your schematics.')
-    async def upgrade(
-            self,
-            interaction: Interaction,
-            name: str = '',
-            level: int = 50,
-            material: app_commands.Choice[str] = None
-    ):
+    @app_commands.describe(name='Name of the hero.', level='The desired level of the hero.')
+    @app_commands.command(name='upgrade', description='Upgrade one of your heroes.')
+    async def upgrade(self, interaction: Interaction, name: str = '', level: int = 50):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
         if level not in range(2, 61):
             raise STWException(f'Level `{level}` is invalid, please try again.')
 
         account = await self.bot.get_full_account(interaction.user.id)
-        schematics = [schematic for schematic in await account.schematics() if name.lower() in schematic.name.lower()]
+        heroes = [hero for hero in await account.heroes() if name.lower() in hero.name.lower()]
 
-        if not schematics:
-            raise STWException(f'Schematic `{name}` not found.')
+        if not heroes:
+            raise STWException(f'Hero `{name}` not found.')
 
-        embed_fields = self.schematics_to_fields(schematics)
+        embed_fields = self.heroes_to_fields(heroes)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
             description=interaction.user.mention,
-            author_name='Upgrade Schematics',
+            author_name='Upgrade Heroes',
             author_icon=await account.icon_url()
         )
 
@@ -115,9 +98,8 @@ class SchematicCommands(app_commands.Group):
         view.add_item(UpgradeSelectionMenu(
             self.bot,
             interaction.command,
-            schematics,
-            level,
-            material=material.name if material else 'Crystal'
+            heroes,
+            level
         ))
 
         await interaction.followup.send(embed=embeds[0], view=view)
@@ -125,23 +107,23 @@ class SchematicCommands(app_commands.Group):
     @non_premium_cooldown()
     @is_logged_in()
     @is_not_blacklisted()
-    @app_commands.describe(name='Name of the schematic.')
-    @app_commands.command(name='recycle', description='Recycle one of your schematics.')
+    @app_commands.describe(name='Name of the hero.')
+    @app_commands.command(name='recycle', description='Recycle one of your heroes.')
     async def recycle(self, interaction: Interaction, name: str = ''):
         await interaction.response.defer(thinking=True, ephemeral=True)
 
         account = await self.bot.get_full_account(interaction.user.id)
-        schematics = [schematic for schematic in await account.schematics() if name.lower() in schematic.name.lower()]
+        heroes = [hero for hero in await account.heroes() if name.lower() in hero.name.lower()]
 
-        if not schematics:
-            raise STWException(f'Schematic `{name}` not found.')
+        if not heroes:
+            raise STWException(f'Hero `{name}` not found.')
 
-        embed_fields = self.schematics_to_fields(schematics)
+        embed_fields = self.heroes_to_fields(heroes)
         embeds = self.bot.fields_to_embeds(
             interaction,
             embed_fields,
             description=interaction.user.mention,
-            author_name='Recycle Schematics',
+            author_name='Recycle Heroes',
             author_icon=await account.icon_url()
         )
 
@@ -150,11 +132,11 @@ class SchematicCommands(app_commands.Group):
         view.add_item(RecycleSelectionMenu(
             self.bot,
             interaction.command,
-            schematics
+            heroes
         ))
 
         await interaction.followup.send(embed=embeds[0], view=view)
 
 
 async def setup(bot: STWBot):
-    bot.tree.add_command(SchematicCommands(bot))
+    bot.tree.add_command(HeroCommands(bot))

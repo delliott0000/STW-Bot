@@ -79,6 +79,10 @@ class AccountItem(BaseEntity):
 
         self.tier: int = int(template_id[-1]) if template_id[-1].isdigit() else 1
 
+    @property
+    def emoji(self):
+        return emojis['resources'].get(self.name) or emojis['rarities'][self.rarity]
+
 
 class Recyclable(AccountItem):
 
@@ -407,6 +411,19 @@ class SurvivorSquad:
         return fort_stats
 
 
+class Hero(Upgradable):
+
+    """
+    Represents a playable in-game Hero character.
+
+    Currently missing hero type (soldier, ninja etc.) and standard/commander perk attributes.
+    """
+
+    @property
+    def power_level(self):
+        return stringList['Item Power Levels']['Other'][self.rarity][f'{self.tier}'][f'{self.level}']
+
+
 class AccountResource(AccountItem):
 
     """
@@ -424,10 +441,6 @@ class AccountResource(AccountItem):
     ):
         super().__init__(account, item_id, template_id, {})
         self.quantity = quantity
-
-    @property
-    def emoji(self):
-        return emojis['resources'].get(self.name) or emojis['rarities'][self.rarity]
 
 
 class MissionAlertReward(AccountResource):

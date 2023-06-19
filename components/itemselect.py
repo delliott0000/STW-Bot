@@ -42,7 +42,13 @@ class RecycleSelectionMenu(ui.Select):
         item = self.get_selected_item(interaction)
 
         if item.favourite is not True:
-            await item.recycle()
+
+            try:
+                await item.recycle()
+            except BadRequest as error:
+                command_exception = app_commands.CommandInvokeError(self.command, error)
+                await self.bot.app_command_error(interaction, command_exception)
+                return
 
         else:
             recycle_exception = STWException('Favorite items can not be recycled.')

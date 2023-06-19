@@ -79,7 +79,7 @@ class SurvivorCommands(app_commands.Group):
             id_str = f'> {emojis["id"]} **Item ID:** `{survivor.item_id}`\n' if show_ids is True else ''
 
             embed_field = EmbedField(
-                name=f'{emojis["rarities"][survivor.rarity]} '
+                name=f'{survivor.emoji} '
                      f'{emojis["personalities"][survivor.personality]} '
                      f'{extra_str} '
                      f'{survivor.name}',
