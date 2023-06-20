@@ -11,7 +11,7 @@ from core.errors import STWException, HTTPException, BadRequest, Unauthorized, F
 from core.accounts import PartialEpicAccount, FullEpicAccount
 
 
-async def to_dict(response: ClientResponse) -> dict:
+async def to_dict(response: ClientResponse) -> Union[dict, list]:
     try:
         return await response.json()
     except ClientResponseError:

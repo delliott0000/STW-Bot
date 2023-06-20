@@ -1700,6 +1700,26 @@ stringList = {
       "rarity": "uncommon",
       "type": "trap"
     },
+    "Schematic:sid_floor_defender": {
+      "name": "Defender Post",
+      "rarity": "rare",
+      "type": "trap"
+    },
+    "Schematic:sid_floor_player_jump_pad_free_direction": {
+      "name": "Player Jump Pad (Directional)",
+      "rarity": "rare",
+      "type": "trap"
+    },
+    "Schematic:sid_floor_player_jump_pad": {
+      "name": "Player Jump Pad (Up)",
+      "rarity": "rare",
+      "type": "trap"
+    },
+    "Schematic:sid_floor_hoverboard_speed_r_t01": {
+      "name": "Boost Pad (Straight)",
+      "rarity": "rare",
+      "type": "trap"
+    },
     "Schematic:sid_ceiling_gas_r_t01": {
       "name": "Ceiling Gas Trap",
       "rarity": "rare",
@@ -1733,6 +1753,11 @@ stringList = {
     "Schematic:sid_floor_health_r_t01": {
       "name": "Healing Pad",
       "rarity": "rare",
+      "type": "trap"
+    },
+    "Schematic:sid_floor_health_c_t00": {
+      "name": "Healing Pad",
+      "rarity": "common",
       "type": "trap"
     },
     "Schematic:sid_ceiling_electric_aoe_vr_t01": {
@@ -1868,6 +1893,11 @@ stringList = {
     "Schematic:sid_edged_axe_medium_c_ore_t01": {
       "name": "Handmade Axe",
       "rarity": "common",
+      "type": "weapon"
+    },
+    "Schematic:sid_explosive_invasion_plasmacannon_sr_ore_t01": {
+      "name": "Plasmatic Discharger",
+      "rarity": "legendary",
       "type": "weapon"
     },
     "Schematic:sid_assault_snowball_vr_ore_t01": {
