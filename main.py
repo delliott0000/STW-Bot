@@ -181,14 +181,16 @@ class STWBot(commands.Bot):
     @tasks.loop(minutes=1)
     async def renew_sessions(self):
         for discord_id in self._cached_auth_sessions:
+
             auth = self.get_auth_session(discord_id)
             if auth.refresh_expires_at - time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
+
+                logging.info(f'Attempting to renew Auth session {auth.access_token}...')
                 try:
-                    logging.info(f'Attempting to renew OAuth session {auth.access_token}...')
                     await auth.renew()
                     logging.info(f'Success.')
                 except Unauthorized:
-                    logging.error(f'Failed to renew OAuth session {auth.access_token} - ending session...')
+                    logging.error(f'Failed to renew Auth session {auth.access_token} - ending session...')
                     await self.del_auth_session(discord_id)
 
     async def missions(self) -> list[MissionAlert]:
