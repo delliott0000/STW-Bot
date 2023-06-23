@@ -13,6 +13,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 try:
     from discord.ext import commands, tasks
+    from discord.utils import MISSING
+    from discord.ui import View
     from discord import (
         __version__ as __discord__,
         Intents,
@@ -32,6 +34,7 @@ try:
     from core.accounts import FullEpicAccount, FriendEpicAccount, PartialEpicAccount
     from core.fortnite import MissionAlert
     from components.embed import CustomEmbed, EmbedField
+    from components.traceback import TracebackView
     from resources import config
 except ModuleNotFoundError as unknown_import:
     logging.fatal(f'Missing required dependencies - {unknown_import}.')
@@ -74,16 +77,16 @@ class STWBot(commands.Bot):
             return 0xffffff
 
     @staticmethod
-    async def basic_response(interaction: Interaction, message: str, color: int = None) -> None:
+    async def basic_response(interaction: Interaction, message: str, color: int = None, view: View = MISSING) -> None:
         basic_embed = CustomEmbed(interaction, description=message, color=color)
         try:
             # noinspection PyUnresolvedReferences
-            await interaction.response.send_message(embed=basic_embed, ephemeral=True)
+            await interaction.response.send_message(embed=basic_embed, view=view, ephemeral=True)
         except InteractionResponded:
-            await interaction.followup.send(embed=basic_embed)
+            await interaction.followup.send(embed=basic_embed, view=view)
 
-    async def bad_response(self, interaction: Interaction, message: str) -> None:
-        await self.basic_response(interaction, f'❌ {message}', Color.red())
+    async def bad_response(self, interaction: Interaction, message: str, view: View = MISSING) -> None:
+        await self.basic_response(interaction, f'❌ {message}', Color.red(), view=view)
 
     @staticmethod
     def fields_to_embeds(
@@ -172,11 +175,11 @@ class STWBot(commands.Bot):
         else:
             message = str(error)
 
-        traceback_ = ''.join(format_exception(type(error), error, error.__traceback__))
-        full_message = f'**{message}**\n\n**Full traceback:**\n```py\n{traceback_}\n```' \
-            if interaction.user.id in self.owner_ids else f'**{message}**'
+        traceback_ = f'**Full Traceback:**\n' \
+                     f'```\n{"".join(format_exception(type(error), error, error.__traceback__))}\n```'
+        view = TracebackView(self, interaction, traceback=traceback_)
 
-        await self.bad_response(interaction, full_message)
+        await self.bad_response(interaction, message, view=view)
 
     @tasks.loop(minutes=1)
     async def renew_sessions(self):
