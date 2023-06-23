@@ -39,6 +39,9 @@ class RecycleSelectionMenu(ui.Select):
         return [item for item in self.items if item.item_id == interaction.data['values'][0]][0]
 
     async def callback(self, interaction: Interaction):
+        # noinspection PyUnresolvedReferences
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
         item = self.get_selected_item(interaction)
 
         if item.favourite is not True:
@@ -76,6 +79,9 @@ class UpgradeSelectionMenu(RecycleSelectionMenu):
         self.tier = min((level - 1) // 10 + 1, 5)
 
     async def callback(self, interaction: Interaction):
+        # noinspection PyUnresolvedReferences
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
         item = self.get_selected_item(interaction)
 
         if self.level <= item.level:

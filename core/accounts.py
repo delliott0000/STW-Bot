@@ -140,8 +140,8 @@ class PartialEpicAccount:
                         logging.error(error)
                         continue
                     self._object_cache['schematics']['items'].append(schematic)
-            self._object_cache['schematics']['items'].sort(key=lambda x: x.power_level, reverse=True)
 
+        self._object_cache['schematics']['items'].sort(key=lambda x: x.power_level, reverse=True)
         return self._object_cache['schematics']['items']
 
     async def survivors(self) -> list[Union[Survivor, LeadSurvivor]]:
@@ -161,8 +161,8 @@ class PartialEpicAccount:
                     logging.error(error)
                     continue
                 self._object_cache['survivors']['items'].append(survivor)
-            self._object_cache['survivors']['items'].sort(key=lambda x: x.base_power_level, reverse=True)
 
+        self._object_cache['survivors']['items'].sort(key=lambda x: x.base_power_level, reverse=True)
         return self._object_cache['survivors']['items']
 
     async def heroes(self) -> list[Hero]:
@@ -178,8 +178,8 @@ class PartialEpicAccount:
                         logging.error(error)
                         continue
                     self._object_cache['heroes']['items'].append(hero)
-            self._object_cache['heroes']['items'].sort(key=lambda x: x.power_level, reverse=True)
 
+        self._object_cache['heroes']['items'].sort(key=lambda x: x.power_level, reverse=True)
         return self._object_cache['heroes']['items']
 
     async def resources(self) -> list[AccountResource]:
