@@ -1,4 +1,5 @@
 import logging
+from time import time
 from math import floor
 from typing import Union, Optional
 
@@ -53,14 +54,47 @@ class PartialEpicAccount:
         self.id = data.get('id') or data.get('accountId')
         self.display = data.get('displayName')
 
+        self._raw_data = {}
+        self._raw_data_update_at = time() + 300
+
         self._icon_url = None
+
+        self._object_cache = {}
+
+        empty_cache_slot = self._empty_cache_slot()
+        for object_type in ['schematics', 'survivors', 'resources', 'heroes', 'squads']:
+            self._object_cache[object_type] = empty_cache_slot
 
     @staticmethod
     def _dt_to_int(dt: str) -> int:
         return floor(parser.parse(dt).timestamp())
 
+    @staticmethod
+    def _empty_cache_slot() -> dict:
+        return {'items': [], 'update_at': time() + 300}
+
+    @staticmethod
+    def _needs_update(object_cache_slot: dict) -> bool:
+        return not object_cache_slot['items'] or object_cache_slot['update_at'] < time()
+
+    @staticmethod
+    def _squad_name_mapping() -> dict:
+        return {squad_name: {'survivors': [], 'lead': None} for squad_name in (
+            'The Think Tank',
+            'Fire Team Alpha',
+            'Close Assault Squad',
+            'Training Team',
+            'EMT Squad',
+            'Corps Of Engineering',
+            'Gadgeteers',
+            'Scouting Party'
+        )}
+
     async def fort_data(self) -> dict:
-        return await self.auth_session.profile_request(epic_id=self.id)
+        if not self._raw_data or self._raw_data_update_at < time():
+            self._raw_data = await self.auth_session.profile_request(epic_id=self.id)
+            self._raw_data_update_at = time() + 300
+        return self._raw_data
 
     async def icon_url(self) -> Optional[str]:
         if self._icon_url is None:
@@ -94,106 +128,93 @@ class PartialEpicAccount:
         return (await self.fort_data())['profileChanges'][0]['profile']['items']
 
     async def schematics(self) -> list[Schematic]:
-        items = await self.fort_items()
-        schematics = []
+        if self._needs_update(self._object_cache['schematics']):
+            self._object_cache['schematics'] = self._empty_cache_slot()
 
-        for item in items:
+            items = await self.fort_items()
+            for item in items:
+                if items[item]['templateId'].startswith('Schematic:sid'):
+                    try:
+                        schematic = Schematic(self, item, items[item]['templateId'], items[item]['attributes'])
+                    except UnknownItem as error:
+                        logging.error(error)
+                        continue
+                    self._object_cache['schematics']['items'].append(schematic)
+            self._object_cache['schematics']['items'].sort(key=lambda x: x.power_level, reverse=True)
 
-            if items[item]['templateId'].startswith('Schematic:sid'):
-                try:
-                    schematic = Schematic(self, item, items[item]['templateId'], items[item]['attributes'])
-                except UnknownItem as error:
-                    logging.error(error)
-                    continue
-
-                schematics.append(schematic)
-
-        schematics.sort(key=lambda x: x.power_level, reverse=True)
-        return schematics
+        return self._object_cache['schematics']['items']
 
     async def survivors(self) -> list[Union[Survivor, LeadSurvivor]]:
-        items = await self.fort_items()
-        survivors = []
+        if self._needs_update(self._object_cache['survivors']):
+            self._object_cache['survivors'] = self._empty_cache_slot()
 
-        for item in items:
-
-            try:
-                if items[item]['templateId'].startswith('Worker:worker'):
-                    survivor = Survivor(self, item, items[item]['templateId'], items[item]['attributes'])
-                elif items[item]['templateId'].startswith('Worker:manager'):
-                    survivor = LeadSurvivor(self, item, items[item]['templateId'], items[item]['attributes'])
-                else:
+            items = await self.fort_items()
+            for item in items:
+                try:
+                    if items[item]['templateId'].startswith('Worker:worker'):
+                        survivor = Survivor(self, item, items[item]['templateId'], items[item]['attributes'])
+                    elif items[item]['templateId'].startswith('Worker:manager'):
+                        survivor = LeadSurvivor(self, item, items[item]['templateId'], items[item]['attributes'])
+                    else:
+                        continue
+                except (UnknownItem, BadItemData) as error:
+                    logging.error(error)
                     continue
-            except (UnknownItem, BadItemData) as error:
-                logging.error(error)
-                continue
+                self._object_cache['survivors']['items'].append(survivor)
+            self._object_cache['survivors']['items'].sort(key=lambda x: x.base_power_level, reverse=True)
 
-            survivors.append(survivor)
-
-        survivors.sort(key=lambda x: x.base_power_level, reverse=True)
-        return survivors
+        return self._object_cache['survivors']['items']
 
     async def heroes(self) -> list[Hero]:
-        items = await self.fort_items()
-        heroes = []
+        if self._needs_update(self._object_cache['heroes']):
+            self._object_cache['heroes'] = self._empty_cache_slot()
 
-        for item in items:
+            items = await self.fort_items()
+            for item in items:
+                if items[item]['templateId'].startswith('Hero:hid'):
+                    try:
+                        hero = Hero(self, item, items[item]['templateId'], items[item]['attributes'])
+                    except UnknownItem as error:
+                        logging.error(error)
+                        continue
+                    self._object_cache['heroes']['items'].append(hero)
+            self._object_cache['heroes']['items'].sort(key=lambda x: x.power_level, reverse=True)
 
-            if items[item]['templateId'].startswith('Hero:hid'):
-                try:
-                    hero = Hero(self, item, items[item]['templateId'], items[item]['attributes'])
-                except UnknownItem as error:
-                    logging.error(error)
-                    continue
-
-                heroes.append(hero)
-
-        heroes.sort(key=lambda x: x.power_level, reverse=True)
-        return heroes
+        return self._object_cache['heroes']['items']
 
     async def resources(self) -> list[AccountResource]:
-        items = await self.fort_items()
-        resources = []
+        if self._needs_update(self._object_cache['resources']):
+            self._object_cache['resources'] = self._empty_cache_slot()
 
-        for item in items:
+            items = await self.fort_items()
+            for item in items:
+                if items[item]['templateId'].startswith('AccountResource'):
+                    try:
+                        resource = AccountResource(self, item, items[item]['templateId'], items[item]['quantity'])
+                    except UnknownItem as error:
+                        logging.error(error)
+                        continue
+                    self._object_cache['resources']['items'].append(resource)
 
-            if items[item]['templateId'].startswith('AccountResource'):
-                try:
-                    resource = AccountResource(self, item, items[item]['templateId'], items[item]['quantity'])
-                except UnknownItem as error:
-                    logging.error(error)
-                    continue
-
-                resources.append(resource)
-
-        return resources
-
-    @staticmethod
-    def _squad_name_mapping() -> dict:
-        squad_mapping = {}
-        for squad_name in ('The Think Tank', 'Fire Team Alpha', 'Close Assault Squad', 'Training Team', 'EMT Squad',
-                           'Corps Of Engineering', 'Gadgeteers', 'Scouting Party'):
-            squad_mapping[squad_name] = {'survivors': [], 'lead': None}
-        return squad_mapping
+        return self._object_cache['resources']['items']
 
     async def survivor_squads(self) -> list[SurvivorSquad]:
-        mapping = self._squad_name_mapping()
+        if self._needs_update(self._object_cache['squads']):
+            self._object_cache['squads'] = self._empty_cache_slot()
 
-        survivors = await self.survivors()
+            mapping = self._squad_name_mapping()
+            for survivor in await self.survivors():
+                if survivor.squad_name is not None:
+                    if isinstance(survivor, LeadSurvivor):
+                        mapping[survivor.squad_name]['lead'] = survivor
+                    elif isinstance(survivor, Survivor):
+                        mapping[survivor.squad_name]['survivors'].append(survivor)
 
-        for survivor in survivors:
-            if survivor.squad_name is not None:
-                if isinstance(survivor, LeadSurvivor):
-                    mapping[survivor.squad_name]['lead'] = survivor
-                elif isinstance(survivor, Survivor):
-                    mapping[survivor.squad_name]['survivors'].append(survivor)
+            for name in mapping:
+                squad = SurvivorSquad(name, lead=mapping[name]['lead'], survivors=mapping[name]['survivors'])
+                self._object_cache['squads']['items'].append(squad)
 
-        squad_list = []
-        for name in mapping:
-            squad = SurvivorSquad(name, lead=mapping[name]['lead'], survivors=mapping[name]['survivors'])
-            squad_list.append(squad)
-
-        return squad_list
+        return self._object_cache['squads']['items']
 
 
 class FriendEpicAccount(PartialEpicAccount):
