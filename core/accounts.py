@@ -5,7 +5,7 @@ from typing import Union, Optional
 
 from dateutil import parser
 
-from core.errors import UnknownItem, BadItemData, NotFound, BadRequest
+from core.errors import UnknownItem, BadItemData, HTTPException, NotFound
 from core.fortnite import Schematic, Survivor, LeadSurvivor, SurvivorSquad, Hero, AccountResource
 
 
@@ -117,7 +117,7 @@ class PartialEpicAccount:
                         )
                         self._icon_url = character_data['data']['images']['icon']
 
-                    except (KeyError, BadRequest):
+                    except (KeyError, HTTPException):
                         continue
 
                     break
