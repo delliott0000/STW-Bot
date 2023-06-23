@@ -278,7 +278,7 @@ class STWBot(commands.Bot):
         logging.info('Success!')
 
     @staticmethod
-    def _mission_name(generator: str) -> Optional[str]:
+    def _mission_name(generator: str) -> str:
         if "_EtSurvivors_" in generator or '_EvacuateTheSurvivors_' in generator:
             return 'Rescue The Survivors'
         elif "_EtShelter_" in generator:
