@@ -309,6 +309,7 @@ class STWBot(commands.Bot):
             return 'Refuel Homebase'
         elif '_BuildtheRadarGrid' in generator:
             return 'Build The Radar Grid'
+        return 'Unknown Mission'
 
     async def setup_hook(self):
         logging.info(f'Logging in as {self.user} (ID: {self.user.id})...')

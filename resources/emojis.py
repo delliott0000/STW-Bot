@@ -116,7 +116,8 @@ emojis = {
         'Retrieve The Data': '<:RetrievetheData:1114948555052961892>',
         'Repair The Shelter': '<:RepairTheShelter:1114948608450646107>',
         'Destroy The Encampments': '<:DestroytheEncampmentsAlpha:1114948667581923440>',
-        'Resupply': '<:Resupply:1114948699668365403>'
+        'Resupply': '<:Resupply:1114948699668365403>',
+        'Unknown Mission': '<:Unknown:1115061137759805481>'
     },
     'resources': {
         'Pure Drop of Rain': '<:PureDropOfRain:1087140245167931484>',
