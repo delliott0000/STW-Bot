@@ -2,6 +2,7 @@ import logging
 from time import time
 from math import floor
 from typing import Union, Optional
+from weakref import ref
 
 from dateutil import parser
 
@@ -49,7 +50,7 @@ class PartialEpicAccount:
             auth_session,
             data: dict
     ):
-        self.auth_session = auth_session
+        self.auth_session = ref(auth_session)
 
         self.id = data.get('id') or data.get('accountId')
         self.display = data.get('displayName')
@@ -92,7 +93,7 @@ class PartialEpicAccount:
 
     async def fort_data(self) -> dict:
         if not self._raw_data or self._raw_data_update_at < time():
-            self._raw_data = await self.auth_session.profile_request(epic_id=self.id)
+            self._raw_data = await self.auth_session().profile_request(epic_id=self.id)
             self._raw_data_update_at = time() + 300
         return self._raw_data
 
@@ -111,7 +112,7 @@ class PartialEpicAccount:
                     try:
                         char_id = items[item]['attributes']['locker_slots_data']['slots']['Character']['items'][0][16:]
 
-                        character_data = await self.auth_session.client.request(
+                        character_data = await self.auth_session().client.request(
                             'get',
                             f'https://fortnite-api.com/v2/cosmetics/br/{char_id}'
                         )
@@ -267,7 +268,7 @@ class FullEpicAccount(PartialEpicAccount):
         self.tfa_enabled = data.get('tfaEnabled')
 
     async def external_auths(self) -> list[ExternalConnection]:
-        data = await self.auth_session.get_own_externals()
+        data = await self.auth_session().get_own_externals()
 
         externals = []
 
@@ -281,16 +282,16 @@ class FullEpicAccount(PartialEpicAccount):
         for i in range(0, len(list_), n):
             yield list_[i:i + n]
 
-    # Recently re-worked to prioritise using as few API calls as possible
-    # Perhaps some polishing and speed optimisation is possible though
+    # Priority is to make as few API calls as possible
+    # Some polishing and speed optimisation might be doable
     async def friends_list(self, friend_type: str = 'friends') -> list[Union[PartialEpicAccount, FriendEpicAccount]]:
-        data = await self.auth_session.get_own_friend_data()
+        data = await self.auth_session().get_own_friend_data()
 
         friends_list = []
         cls_ = PartialEpicAccount if friend_type == 'blocklist' else FriendEpicAccount
 
         for item in data[friend_type]:
-            friend = cls_(self.auth_session, item)
+            friend = cls_(self.auth_session(), item)
             friends_list.append(friend)
 
         # Epic does not give us the display names of the accounts when we request friend data
@@ -301,12 +302,13 @@ class FullEpicAccount(PartialEpicAccount):
         # This splits the list of friend IDs into groups of up to 100
         friend_id_groups = list(self._chunk([account.id for account in friends_list], 100))
 
-        # Nobody needs more than 300 people on their friends list... right?
+        # This code is blocking, so we limit the number of friend objects being processed
+        # Besides, nobody needs more than 300 people on their friends list... right?
         if len(friend_id_groups) > 3:
             friend_id_groups = friend_id_groups[:3]
 
         for friend_id_group in friend_id_groups:
-            id_group_data = await self.auth_session.bulk_account_lookup(friend_id_group)
+            id_group_data = await self.auth_session().bulk_account_lookup(friend_id_group)
             for entry in id_group_data:
                 for account in friends_list:
                     if entry.get('id') == account.id:
@@ -319,34 +321,34 @@ class FullEpicAccount(PartialEpicAccount):
             self,
             friend_id: str
     ) -> None:
-        await self.auth_session.access_request(
+        await self.auth_session().access_request(
             'post',
-            self.auth_session.client.friends_requests_url.format(f'{self.id}/friends/{friend_id}')
+            self.auth_session().client.friends_requests_url.format(f'{self.id}/friends/{friend_id}')
         )
 
     async def del_friend(
             self,
             friend_id: str
     ) -> None:
-        await self.auth_session.access_request(
+        await self.auth_session().access_request(
             'delete',
-            self.auth_session.client.friends_requests_url.format(f'{self.id}/friends/{friend_id}')
+            self.auth_session().client.friends_requests_url.format(f'{self.id}/friends/{friend_id}')
         )
 
     async def block(
             self,
             epic_id: str,
     ) -> None:
-        await self.auth_session.access_request(
+        await self.auth_session().access_request(
             'post',
-            self.auth_session.client.friends_requests_url.format(f'{self.id}/blocklist/{epic_id}')
+            self.auth_session().client.friends_requests_url.format(f'{self.id}/blocklist/{epic_id}')
         )
 
     async def unblock(
             self,
             epic_id: str,
     ) -> None:
-        await self.auth_session.access_request(
+        await self.auth_session().access_request(
             'delete',
-            self.auth_session.client.friends_requests_url.format(f'{self.id}/blocklist/{epic_id}')
+            self.auth_session().client.friends_requests_url.format(f'{self.id}/blocklist/{epic_id}')
         )

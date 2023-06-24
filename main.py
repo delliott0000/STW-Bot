@@ -142,16 +142,13 @@ class STWBot(commands.Bot):
         self._cached_auth_sessions[auth_session.discord_id] = auth_session
 
     async def del_auth_session(self, discord_id: int) -> None:
-        auth_session = self._cached_auth_sessions.get(discord_id)
+        # noinspection PyBroadException
+        try:
+            await self._cached_auth_sessions.get(discord_id).kill()
+        except Exception:
+            pass
 
-        if not isinstance(auth_session, AuthSession):
-            return
-
-        await auth_session.kill()
-
-        auth_session.del_own_account()
-        del auth_session
-        del self._cached_auth_sessions[discord_id]
+        self._cached_auth_sessions.pop(discord_id)
 
     def user_is_logged_in(self, discord_id: int) -> bool:
         return True if isinstance(self.get_auth_session(discord_id), AuthSession) else False
@@ -186,8 +183,8 @@ class STWBot(commands.Bot):
         for discord_id in self._cached_auth_sessions:
 
             auth = self.get_auth_session(discord_id)
-            if auth.refresh_expires_at - time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
 
+            if auth.refresh_expires_at - time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
                 logging.info(f'Attempting to renew Auth session {auth.access_token}...')
                 try:
                     await auth.renew()
@@ -195,6 +192,9 @@ class STWBot(commands.Bot):
                 except Unauthorized:
                     logging.error(f'Failed to renew Auth session {auth.access_token} - ending session...')
                     await self.del_auth_session(discord_id)
+
+            elif auth.cache_is_expired is True:
+                auth.del_own_account()
 
     async def missions(self) -> list[MissionAlert]:
         if not self._mission_alert_cache:

@@ -105,8 +105,8 @@ class AccountCommands(app_commands.Group):
         info_embed.add_field(
             name='Login Credentials:',
             value=f'> **Epic ID:** `{account.id}`\n'
-                  f'> **Access Token:** `{account.auth_session.access_token}`\n'
-                  f'> **Refresh Token:** `{account.auth_session.refresh_token}`\n'
+                  f'> **Access Token:** `{account.auth_session().access_token}`\n'
+                  f'> **Refresh Token:** `{account.auth_session().refresh_token}`\n'
         )
 
         await interaction.followup.send(embed=info_embed)

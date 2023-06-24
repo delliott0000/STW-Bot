@@ -1,4 +1,5 @@
 from typing import Optional
+from weakref import ref
 
 # stringList is a lookup table containing values such as the names, rarities and types of items
 # This is necessary as not all data can be retrieved via HTTP request, some of it is hard-coded in the game
@@ -25,15 +26,13 @@ class BaseEntity:
             item_id: str,
             template_id: str
     ):
-        self.account = account
+        try:
+            self.account = ref(account)
+        except TypeError:
+            self.account = lambda: None
+
         self.item_id: str = item_id
         self.template_id: str = template_id
-
-    def __eq__(
-            self,
-            other
-    ):
-        return isinstance(other, BaseEntity) and self.item_id and other.item_id and self.item_id == other.item_id
 
 
 class AccountItem(BaseEntity):
@@ -93,7 +92,8 @@ class Recyclable(AccountItem):
     """
 
     async def recycle(self):
-        await self.account.auth_session.profile_request(
+        # noinspection PyUnresolvedReferences
+        await self.account().auth_session().profile_request(
             route='client',
             operation='RecycleItem',
             profile_id='campaign',
@@ -116,7 +116,8 @@ class Upgradable(Recyclable):
     __mapping = {1: 'i', 2: 'ii', 3: 'iii', 4: 'iv', 5: 'v'}
 
     async def bulk_upgrade(self, level: int, tier: int, index: int = -1) -> None:
-        await self.account.auth_session.profile_request(
+        # noinspection PyUnresolvedReferences
+        await self.account().auth_session().profile_request(
             route='client',
             operation='UpgradeItemBulk',
             json={
@@ -204,7 +205,7 @@ class SchematicPerk:
             item: Schematic,
             perk_id: str
     ):
-        self.item = item
+        self.item = ref(item)
         self.perkId = perk_id
 
         self.description = None
@@ -352,9 +353,6 @@ class SurvivorSquad:
         self.name = name
         self.lead = lead
         self.survivors = survivors
-
-    # These next two property methods are quite unreadable and need work.
-    # But they work for now.
 
     @property
     def active_set_bonuses(self) -> list[ActiveSetBonus]:

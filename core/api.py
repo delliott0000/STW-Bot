@@ -64,13 +64,16 @@ class AuthSession:
     def is_expired(self) -> bool:
         return self._expired or self.refresh_expires_at < time()
 
+    @property
+    def cache_is_expired(self) -> bool:
+        return self._cached_full_update_time < time()
+
     @staticmethod
     def _dt_to_float(dt: str) -> float:
         return parser.parse(dt).timestamp()
 
-    # Called when an `AuthSession` instance needs to be deleted from memory
     def del_own_account(self):
-        del self._cached_full_account
+        self._cached_full_account = None
 
     async def renew(self) -> None:
         # Do nothing if the access token is already active

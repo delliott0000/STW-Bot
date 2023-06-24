@@ -3585,6 +3585,11 @@ stringList = {
       "rarity": "legendary",
       "type": "weapon"
     },
+    "Schematic:sid_assault_smg_invasion_raygun_sr_ore_t01": {
+      "name": "Shooting Star",
+      "rarity": "legendary",
+      "type": "weapon"
+    },
     "Schematic:sid_sniper_bbgun_sr_ore_t01": {
       "name": "Ralphie's Revenge",
       "rarity": "legendary",
