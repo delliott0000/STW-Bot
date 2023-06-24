@@ -182,7 +182,7 @@ class STWBot(commands.Bot):
         await self.bad_response(interaction, message, view=view)
 
     @tasks.loop(minutes=1)
-    async def renew_sessions(self):
+    async def manage_sessions(self):
         for discord_id in self._cached_auth_sessions:
 
             auth = self.get_auth_session(discord_id)
@@ -325,7 +325,7 @@ class STWBot(commands.Bot):
         self.app_commands = await self.tree.sync()
         logging.info('Done!')
 
-        self.renew_sessions.start()
+        self.manage_sessions.start()
         self.refresh_mission_alerts.start()
 
     def run_bot(self):
@@ -345,7 +345,7 @@ class STWBot(commands.Bot):
                 logging.fatal('Intents are being requested that have not been enabled in the developer portal.')
 
         async def _cleanup():
-            self.renew_sessions.cancel()
+            self.manage_sessions.cancel()
             self.refresh_mission_alerts.cancel()
 
             kill_session_tasks = []
