@@ -249,8 +249,7 @@ class SurvivorBase(Upgradable):
             self.squad_id = attrs['squad_id']
             self.squad_name = stringList['Survivor Squads'][self.squad_id]
         except KeyError:
-            self.squad_name = None
-            self.squad_index = None
+            self.squad_id = self.squad_name = None
 
 
 class Survivor(SurvivorBase):
@@ -342,7 +341,8 @@ class SurvivorSquad:
 
     def __init__(
             self,
-            name: str,
+            account,
+            squad_id: str,
             lead: Optional[LeadSurvivor] = None,
             survivors: list[Survivor] = None
     ):
@@ -350,7 +350,11 @@ class SurvivorSquad:
             survivors = []
         survivors.sort(key=lambda x: x.squad_index)
 
-        self.name = name
+        self.account = ref(account)
+
+        self.id = squad_id
+        self.name = stringList['Survivor Squads'][self.id]
+
         self.lead = lead
         self.survivors = survivors
 

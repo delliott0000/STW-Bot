@@ -79,16 +79,16 @@ class PartialEpicAccount:
         return not object_cache_slot['items'] or object_cache_slot['update_at'] < time()
 
     @staticmethod
-    def _squad_name_mapping() -> dict:
+    def _squad_mapping() -> dict:
         return {squad_name: {'survivors': [], 'lead': None} for squad_name in (
-            'The Think Tank',
-            'Fire Team Alpha',
-            'Close Assault Squad',
-            'Training Team',
-            'EMT Squad',
-            'Corps Of Engineering',
-            'Gadgeteers',
-            'Scouting Party'
+            'squad_attribute_medicine_emtsquad',
+            'squad_attribute_arms_fireteamalpha',
+            'squad_attribute_scavenging_gadgeteers',
+            'squad_attribute_synthesis_corpsofengineering',
+            'squad_attribute_medicine_trainingteam',
+            'squad_attribute_arms_closeassaultsquad',
+            'squad_attribute_scavenging_scoutingparty',
+            'squad_attribute_synthesis_thethinktank'
         )}
 
     async def fort_data(self) -> dict:
@@ -203,16 +203,16 @@ class PartialEpicAccount:
         if self._needs_update(self._object_cache['squads']):
             self._object_cache['squads'] = self._empty_cache_slot()
 
-            mapping = self._squad_name_mapping()
+            mapping = self._squad_mapping()
             for survivor in await self.survivors():
-                if survivor.squad_name is not None:
+                if survivor.squad_id is not None:
                     if isinstance(survivor, LeadSurvivor):
-                        mapping[survivor.squad_name]['lead'] = survivor
+                        mapping[survivor.squad_id]['lead'] = survivor
                     elif isinstance(survivor, Survivor):
-                        mapping[survivor.squad_name]['survivors'].append(survivor)
+                        mapping[survivor.squad_id]['survivors'].append(survivor)
 
-            for name in mapping:
-                squad = SurvivorSquad(name, lead=mapping[name]['lead'], survivors=mapping[name]['survivors'])
+            for squad in mapping:
+                squad = SurvivorSquad(self, squad, lead=mapping[squad]['lead'], survivors=mapping[squad]['survivors'])
                 self._object_cache['squads']['items'].append(squad)
 
         return self._object_cache['squads']['items']
