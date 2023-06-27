@@ -5,7 +5,7 @@ from aiohttp import ClientSession
 from typing import Union, Dict, Optional
 from math import floor
 from datetime import timedelta
-from time import time
+from time import time as t_time
 from datetime import time as dt_time
 from traceback import format_exception
 
@@ -54,11 +54,8 @@ class STWBot(commands.Bot):
             help_command=None,
             owner_ids=config.OWNERS
         )
-        # Redefined in `async setup_hook`
-        self._session = None
-        self.epic_api = None
-
-        self.mongo_db = MongoDBClient(config.MONGO)
+        # Redefined later on
+        self._session = self.epic_api = self.mongo_db = None
 
         self.app_commands = []
         self.tree.on_error = self.app_command_error
@@ -154,10 +151,10 @@ class STWBot(commands.Bot):
         return True if isinstance(self.get_auth_session(discord_id), AuthSession) else False
 
     async def user_is_blacklisted(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_data_entry(discord_id)).get('is_blacklisted', False)
+        return (await self.mongo_db.search_userdata_entry(discord_id)).get('blacklisted', False)
 
     async def user_is_premium(self, discord_id: int) -> bool:
-        return (await self.mongo_db.search_data_entry(discord_id)).get('is_premium', False)
+        return (await self.mongo_db.search_userdata_entry(discord_id)).get('premium', False)
 
     async def user_setting_stay_signed_in(self, discord_id: int) -> bool:
         return (await self.mongo_db.search_settings_entry(discord_id)).get('stay_signed_in', True)
@@ -184,7 +181,7 @@ class STWBot(commands.Bot):
 
             auth = self.get_auth_session(discord_id)
 
-            if auth.refresh_expires_at - time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
+            if auth.refresh_expires_at - t_time() < 120 and await self.user_setting_stay_signed_in(discord_id) is True:
                 logging.info(f'Attempting to renew Auth session {auth.access_token}...')
                 try:
                     await auth.renew()
@@ -331,18 +328,19 @@ class STWBot(commands.Bot):
     def run_bot(self):
 
         async def _run_bot():
-            for filename in os.listdir('./ext'):
-                if filename.endswith('.py'):
-                    try:
-                        await self.load_extension(f'ext.{filename[:-3]}')
-                    except (commands.ExtensionFailed, commands.NoEntryPointError) as extension_error:
-                        logging.error(f'Extension {filename} could not be loaded: {extension_error}')
-            try:
-                await self.start(config.TOKEN)
-            except LoginFailure:
-                logging.fatal('Invalid token passed.')
-            except PrivilegedIntentsRequired:
-                logging.fatal('Intents are being requested that have not been enabled in the developer portal.')
+            async with self, MongoDBClient(config.MONGO) as self.mongo_db:
+                for filename in os.listdir('./ext'):
+                    if filename.endswith('.py'):
+                        try:
+                            await self.load_extension(f'ext.{filename[:-3]}')
+                        except (commands.ExtensionFailed, commands.NoEntryPointError) as extension_error:
+                            logging.error(f'Extension {filename} could not be loaded: {extension_error}')
+                try:
+                    await self.start(config.TOKEN)
+                except LoginFailure:
+                    logging.fatal('Invalid token passed.')
+                except PrivilegedIntentsRequired:
+                    logging.fatal('Intents are being requested that have not been enabled in the developer portal.')
 
         async def _cleanup():
             self.manage_sessions.cancel()
@@ -357,8 +355,6 @@ class STWBot(commands.Bot):
 
             if self._session:
                 await self._session.close()
-
-            await self.close()
 
         # noinspection PyUnresolvedReferences
         with asyncio.Runner() as runner:
