@@ -374,7 +374,7 @@ class STWBot(commands.Bot):
 
 if __name__ == '__main__':
 
-    if __discord__ == '2.2.3':
+    if __discord__ == '2.3.1':
         bot = STWBot()
         bot.run_bot()
 
