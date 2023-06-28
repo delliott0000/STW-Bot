@@ -12698,5 +12698,28 @@ stringList = {
             "KeyTime": 92765.0,
             "KeyValue": 225.0
           }
-        ]
+        ],
+  "Missions": {
+        '_EtSurvivors_': 'Rescue The Survivors',
+        '_EvacuateTheSurvivors_': 'Rescue The Survivors',
+        '_EtShelter_': 'Evacuate The Shelter',
+        '_1Gate_': 'Fight The Storm: Category 1',
+        '_Cat1FtS_': 'Fight The Storm: Category 1',
+        '_2Gate': 'Fight The Storm: Category 2',
+        '_3Gate': 'Fight The Storm: Category 3',
+        '_4Gate': 'Fight The Storm: Category 4',
+        '_DtB_': 'Deliver The Bomb',
+        '_DtE': 'Destroy The Encampments',
+        '_DestroyTheEncampments_': 'Destroy The Encampments',
+        '_RtD_': 'Retrieve The Data',
+        '_RetrieveTheData_': 'Retrieve The Data',
+        '_RtL_': 'Ride The Lightning',
+        '_RideTheLightning_': 'Ride The Lightning',
+        '_LtB_': 'Ride The Lightning',
+        '_RtS_': 'Repair The Shelter',
+        '_Resupply_': 'Resupply',
+        '_EliminateAndCollect': 'Eliminate And Collect',
+        '_RefuelTheBase_': 'Refuel Homebase',
+        '_BuildtheRadarGrid': 'Build The Radar Grid'
+    }
 }

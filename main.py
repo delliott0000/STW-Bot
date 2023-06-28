@@ -35,6 +35,7 @@ try:
     from core.fortnite import MissionAlert
     from components.embed import CustomEmbed, EmbedField
     from components.traceback import TracebackView
+    from resources.lookup import stringList
     from resources import config
 except ModuleNotFoundError as unknown_import:
     logging.fatal(f'Missing required dependencies - {unknown_import}.')
@@ -67,9 +68,9 @@ class STWBot(commands.Bot):
         self._all_theaters = '/Game/Balance/DataTables/GameDifficultyGrowthBounds.GameDifficultyGrowthBounds'
 
     @staticmethod
-    def color(guild: Guild):
+    def color(guild: Guild) -> Union[Color, int]:
         try:
-            return guild.me.colour
+            return guild.me.color
         except AttributeError:
             return 0xffffff
 
@@ -126,12 +127,10 @@ class STWBot(commands.Bot):
             if self._cached_auth_sessions[discord_id].epic_id == account.id:
                 return discord_id
 
-    # Simple shortcut method that attempts to call `async AuthSession.get_own_account()`
     async def get_full_account(self, discord_id: int) -> Optional[FullEpicAccount]:
         auth_session = self.get_auth_session(discord_id)
         try:
-            epic_account = await auth_session.get_own_account()
-            return epic_account
+            return await auth_session.get_own_account()
         except AttributeError:
             return None
 
@@ -159,7 +158,7 @@ class STWBot(commands.Bot):
     async def user_setting_stay_signed_in(self, discord_id: int) -> bool:
         return (await self.mongo_db.search_settings_entry(discord_id)).get('stay_signed_in', True)
 
-    async def app_command_error(self, interaction: Interaction, error: app_commands.AppCommandError):
+    async def app_command_error(self, interaction: Interaction, error: app_commands.AppCommandError) -> None:
         if isinstance(error, app_commands.CommandOnCooldown):
             message = f'You\'re on cooldown. Try again in `{timedelta(seconds=floor(error.retry_after))}`.'
 
@@ -176,7 +175,7 @@ class STWBot(commands.Bot):
         await self.bad_response(interaction, message, view=view)
 
     @tasks.loop(minutes=1)
-    async def manage_sessions(self):
+    async def manage_sessions(self) -> None:
         for discord_id in self._cached_auth_sessions:
 
             auth = self.get_auth_session(discord_id)
@@ -199,7 +198,7 @@ class STWBot(commands.Bot):
         return self._mission_alert_cache
 
     @tasks.loop(time=dt_time(minute=1))
-    async def refresh_mission_alerts(self):
+    async def refresh_mission_alerts(self) -> None:
         self._mission_alert_cache = []
 
         logging.info('Attempting to refresh mission alert data...')
@@ -252,9 +251,12 @@ class STWBot(commands.Bot):
                         __theater = mission.get('missionDifficultyInfo').get("rowName")
                         generator = mission.get('missionGenerator')
 
-                        name = self._mission_name(generator)
-                        if name is None:
-                            break
+                        for mission_name in stringList['Missions']:
+                            if mission_name in generator:
+                                name = stringList['Missions'][mission_name]
+                                break
+                        else:
+                            name = 'Unknown Mission'
 
                         try:
                             power = \
@@ -277,41 +279,7 @@ class STWBot(commands.Bot):
 
         logging.info('Success!')
 
-    @staticmethod
-    def _mission_name(generator: str) -> str:
-        if "_EtSurvivors_" in generator or '_EvacuateTheSurvivors_' in generator:
-            return 'Rescue The Survivors'
-        elif "_EtShelter_" in generator:
-            return 'Evacuate The Shelter'
-        elif "_1Gate_" in generator or '_Cat1FtS_' in generator:
-            return 'Fight The Storm: Category 1'
-        elif "_2Gate" in generator:
-            return 'Fight The Storm: Category 2'
-        elif "_3Gate" in generator:
-            return 'Fight The Storm: Category 3'
-        elif "_4Gate" in generator:
-            return 'Fight The Storm: Category 4'
-        elif "_DtB_" in generator:
-            return 'Deliver The Bomb'
-        elif '_DtE' in generator or '_DestroyTheEncampments_' in generator:
-            return 'Destroy The Encampments'
-        elif "_RtD_" in generator or '_RetrieveTheData_' in generator:
-            return 'Retrieve The Data'
-        elif "_RtL_" in generator or '_RideTheLightning_' in generator or '_LtB_' in generator:
-            return 'Ride The Lightning'
-        elif "_RtS_" in generator:
-            return 'Repair The Shelter'
-        elif '_Resupply_' in generator:
-            return 'Resupply'
-        elif '_EliminateAndCollect' in generator:
-            return 'Eliminate And Collect'
-        elif '_RefuelTheBase_' in generator:
-            return 'Refuel Homebase'
-        elif '_BuildtheRadarGrid' in generator:
-            return 'Build The Radar Grid'
-        return 'Unknown Mission'
-
-    async def setup_hook(self):
+    async def setup_hook(self) -> None:
         logging.info(f'Logging in as {self.user} (ID: {self.user.id})...')
         logging.info(f'Owners: {", ".join([(await self.fetch_user(user_id)).name for user_id in self.owner_ids])}')
 
@@ -325,7 +293,7 @@ class STWBot(commands.Bot):
         self.manage_sessions.start()
         self.refresh_mission_alerts.start()
 
-    def run_bot(self):
+    def run_bot(self) -> None:
 
         async def _run_bot():
             async with self, MongoDBClient(config.MONGO) as self.mongo_db:
