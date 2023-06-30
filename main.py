@@ -345,4 +345,4 @@ if __name__ == '__main__':
     else:
         logging.fatal('The incorrect version of discord.py has been installed.')
         logging.fatal('Current Version: {}'.format(__discord__))
-        logging.fatal('Required: 2.2.3')
+        logging.fatal('Required: 2.3.1')
