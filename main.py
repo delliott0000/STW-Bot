@@ -87,35 +87,21 @@ class STWBot(commands.Bot):
         await self.basic_response(interaction, f'❌ {message}', Color.red(), view=view)
 
     @staticmethod
-    def fields_to_embeds(
-            interaction: Interaction,
-            fields: list[EmbedField],
-            field_limit: int = 6,
-            title: str = None,
-            description: str = None,
-            author_name: str = None,
-            author_icon: str = None
-    ) -> list[CustomEmbed]:
-        embed_list = [CustomEmbed(
-            interaction,
-            title=title,
-            description=description
-        )]
+    def _new_embed(interaction: Interaction, **kwargs):
+        return CustomEmbed(interaction, kwargs.get('title'), kwargs.get('description'))
+
+    def fields_to_embeds(self, interaction: Interaction, fields: list[EmbedField], **kwargs) -> list[CustomEmbed]:
+        embed_list = [self._new_embed(interaction, **kwargs)]
 
         for field in fields:
-
-            if len(embed_list[-1].fields) > field_limit - 1:
-                embed_list.append(CustomEmbed(
-                    interaction,
-                    title=title,
-                    description=description
-                ))
-
+            if len(embed_list[-1].fields) > kwargs.get('field_limit', 6) - 1:
+                embed_list.append(self._new_embed(interaction, **kwargs))
             embed_list[-1].append_field(field)
 
         for embed in embed_list:
-            embed.set_author(name=author_name, icon_url=author_icon)
             embed.set_footer(text=f'Page {embed_list.index(embed) + 1} of {len(embed_list)}')
+            if kwargs.get('author_name') is not None:
+                embed.set_author(name=kwargs.get('author_name'), icon_url=kwargs.get('author_icon'))
 
         return embed_list
 
