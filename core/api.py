@@ -206,8 +206,6 @@ class AsyncRequestsClient:
     This is intended to act as a parent class for specialised client subclasses to maintain flexibility.
 
     Each subclass of this should only need to be instantiated once during runtime.
-
-    Ideally, they should also share the same `ClientSession` object as each other.
     """
 
     def __init__(
@@ -227,30 +225,29 @@ class AsyncRequestsClient:
                 url,
                 **kwargs
         ) as response:
-            data = await to_dict(response)
-
             logging.info(f'({response.status}) {method.upper() + "      "[:6 - len(method)]} {url}')
 
-            # Return our data if the HTTP request was successful
-            if response.status < 300:
+            data = await to_dict(response)
+
+            if 200 <= response.status < 300:
                 return data
 
-            # Check status code, so we know which HTTP exception to raise
             elif response.status == 400:
-                raise BadRequest(response, data)
+                cls = BadRequest
             elif response.status == 401:
-                raise Unauthorized(response, data)
+                cls = Unauthorized
             elif response.status == 403:
-                raise Forbidden(response, data)
+                cls = Forbidden
             elif response.status == 404:
-                raise NotFound(response, data)
+                cls = NotFound
             elif response.status == 429:
-                raise TooManyRequests(response, data)
+                cls = TooManyRequests
             elif response.status >= 500:
-                raise ServerError(response, data)
+                cls = ServerError
+            else:
+                cls = HTTPException
 
-            # Raise generic HTTPException if all previous status codes have been exhausted
-            raise HTTPException(response, data)
+            raise cls(response, data)
 
 
 class EpicGamesClient(AsyncRequestsClient):
