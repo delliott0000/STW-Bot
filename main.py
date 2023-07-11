@@ -267,7 +267,7 @@ class STWBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         logging.info(f'Logging in as {self.user} (ID: {self.user.id})...')
-        logging.info(f'Owners: {", ".join([(await self.fetch_user(user_id)).name for user_id in self.owner_ids])}')
+        logging.info(f'Owner(s): {", ".join([(await self.fetch_user(user_id)).name for user_id in self.owner_ids])}')
 
         self._session = ClientSession()
         self.epic_api = EpicGamesClient(self._session)
